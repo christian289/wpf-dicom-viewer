@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add:*)",
+      "Bash(git push)",
+      "Bash(dir:*)",
+      "Bash(dotnet new:*)",
+      "Bash(dotnet add:*)",
+      "Bash(dotnet build:*)",
+      "Bash(dotnet run)",
+      "Bash(git mv:*)",
+      "Bash(powershell:*)",
+      "Bash(taskkill:*)",
+      "WebSearch",
+      "Bash(dotnet sln add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: WPF DICOM Viewer 포트폴리오 프로젝트 구현\n\n의료 영상 분야 취업을 위한 DICOM Viewer 포트폴리오 프로젝트 완성\n\n## 프로젝트 구조 \\(Clean Architecture + MVVM\\)\n- DicomViewer.Domain: 순수 도메인 모델 \\(Entities, ValueObjects, Enums\\)\n- DicomViewer.Application: Use Cases, Interfaces, DTOs, Services\n- DicomViewer.Infrastructure: fo-dicom 기반 이미지 처리, PACS 클라이언트\n- DicomViewer.ViewModels: MVVM ViewModel \\(WPF 참조 완전 배제\\)\n- DicomViewer.WpfServices: WPF 전용 서비스 \\(Dialog, Render\\)\n- DicomViewer.UI: Custom Controls \\(DicomImageViewer\\)\n- DicomViewer.WpfApp: Composition Root \\(GenericHost + DI\\)\n\n## 주요 기능\n- DICOM 파일 로드 및 표시 \\(fo-dicom 5.2.5\\)\n- Window/Level 조정 \\(마우스 드래그\\)\n- 확대/축소, 팬 \\(마우스 인터랙션\\)\n- 시리즈 네비게이션 \\(슬라이더/마우스 휠\\)\n- W/L 프리셋 \\(Abdomen, Lung, Bone, Brain\\)\n- 로컬 폴더 모의 PACS\n- Orthanc PACS REST API 클라이언트\n\n## 기술 스택\n- .NET 9.0, WPF\n- CommunityToolkit.Mvvm \\(MVVM 프레임워크\\)\n- fo-dicom \\(DICOM 처리\\)\n- Microsoft.Extensions.Hosting \\(DI 컨테이너\\)\n\n## MVVM 원칙 엄격 준수\n- ViewModel에 System.Windows 참조 금지\n- BCL + CommunityToolkit.Mvvm만 사용\n- DataTemplate 기반 View-ViewModel 자동 매핑\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
+    ]
+  }
+}

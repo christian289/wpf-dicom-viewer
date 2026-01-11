@@ -1,0 +1,254 @@
+<UserControl x:Class="DicomViewer.WpfApp.Views.ViewerView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:viewmodels="clr-namespace:DicomViewer.ViewModels;assembly=DicomViewer.ViewModels"
+             xmlns:controls="clr-namespace:DicomViewer.UI.Controls;assembly=DicomViewer.UI"
+             mc:Ignorable="d"
+             Background="#1E1E1E"
+             d:DataContext="{d:DesignInstance Type=viewmodels:ViewerViewModel}">
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="220" />
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="50" />
+        </Grid.ColumnDefinitions>
+
+        <!-- 왼쪽: 시리즈 목록 / Left: Series list -->
+        <Border Grid.Column="0" Background="#252526">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <!-- 환자 정보 / Patient info -->
+                <Border Grid.Row="0" Background="#2D2D30" Padding="12">
+                    <StackPanel>
+                        <TextBlock Text="{Binding PatientName}"
+                                   Foreground="White"
+                                   FontWeight="Bold"
+                                   FontSize="14"
+                                   TextTrimming="CharacterEllipsis" />
+                        <TextBlock Text="{Binding PatientId}"
+                                   Foreground="#999999"
+                                   FontSize="12"
+                                   Margin="0,4,0,0" />
+                        <TextBlock Text="{Binding StudyDescription}"
+                                   Foreground="#999999"
+                                   FontSize="12"
+                                   TextTrimming="CharacterEllipsis"
+                                   Margin="0,4,0,0" />
+                    </StackPanel>
+                </Border>
+
+                <!-- 시리즈 헤더 / Series header -->
+                <TextBlock Grid.Row="1"
+                           Text="Series"
+                           Foreground="#999999"
+                           FontSize="12"
+                           Margin="12,12,12,8" />
+
+                <!-- 시리즈 리스트 / Series list -->
+                <ListBox Grid.Row="2"
+                         ItemsSource="{Binding SeriesList}"
+                         SelectedItem="{Binding SelectedSeries}"
+                         Style="{StaticResource DarkListBoxStyle}"
+                         ItemContainerStyle="{StaticResource DarkListBoxItemStyle}">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Margin="4">
+                                <TextBlock Text="{Binding SeriesDescription}"
+                                           Foreground="White"
+                                           TextTrimming="CharacterEllipsis"
+                                           FontSize="12" />
+                                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                    <TextBlock Text="{Binding Modality}"
+                                               Foreground="#007ACC"
+                                               FontSize="11"
+                                               FontWeight="Bold" />
+                                    <TextBlock Foreground="#999999"
+                                               FontSize="11"
+                                               Margin="8,0,0,0">
+                                        <Run Text="{Binding NumberOfInstances, Mode=OneWay}" />
+                                        <Run Text=" images" />
+                                    </TextBlock>
+                                </StackPanel>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </Grid>
+        </Border>
+
+        <!-- 중앙: DICOM 이미지 뷰어 / Center: DICOM image viewer -->
+        <Grid Grid.Column="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <!-- 이미지 뷰어 / Image viewer -->
+            <controls:DicomImageViewer Grid.Row="0"
+                                       PatientName="{Binding PatientName}"
+                                       WindowWidth="{Binding WindowWidth, Mode=TwoWay}"
+                                       WindowCenter="{Binding WindowCenter, Mode=TwoWay}"
+                                       ZoomFactor="{Binding ZoomFactor, Mode=TwoWay}"
+                                       PanX="{Binding PanX, Mode=TwoWay}"
+                                       PanY="{Binding PanY, Mode=TwoWay}"
+                                       CurrentSlice="{Binding CurrentSliceIndex, Mode=TwoWay}"
+                                       TotalSlices="{Binding TotalSliceCount}"
+                                       CurrentTool="{Binding CurrentTool}"
+                                       SliceChanged="DicomImageViewer_SliceChanged">
+                <controls:DicomImageViewer.ImageSource>
+                    <MultiBinding Converter="{StaticResource ByteArrayToBitmapConverter}">
+                        <Binding Path="CurrentImagePixels" />
+                        <Binding Path="ImageWidth" />
+                        <Binding Path="ImageHeight" />
+                    </MultiBinding>
+                </controls:DicomImageViewer.ImageSource>
+            </controls:DicomImageViewer>
+
+            <!-- 슬라이스 슬라이더 / Slice slider -->
+            <Border Grid.Row="1" Background="#2D2D30" Padding="16,8">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Grid.Column="0"
+                               Text="{Binding CurrentSliceIndex}"
+                               Foreground="White"
+                               VerticalAlignment="Center"
+                               Width="40" />
+
+                    <Slider Grid.Column="1"
+                            Minimum="0"
+                            Maximum="{Binding TotalSliceCount}"
+                            Value="{Binding CurrentSliceIndex}"
+                            Style="{StaticResource SliceSliderStyle}"
+                            VerticalAlignment="Center"
+                            Margin="8,0" />
+
+                    <TextBlock Grid.Column="2"
+                               Text="{Binding TotalSliceCount}"
+                               Foreground="White"
+                               VerticalAlignment="Center"
+                               Width="40"
+                               TextAlignment="Right" />
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- 오른쪽: 도구 패널 / Right: Tools panel -->
+        <Border Grid.Column="2" Background="#2D2D30">
+            <StackPanel Margin="5">
+                <!-- Pan 도구 / Pan tool -->
+                <ToggleButton Style="{StaticResource ToolButtonStyle}"
+                              IsChecked="{Binding CurrentTool, Converter={StaticResource ToolEnumConverter}, ConverterParameter=Pan}"
+                              Command="{Binding SelectToolCommand}"
+                              CommandParameter="Pan"
+                              ToolTip="Pan (Drag)">
+                    <TextBlock Text="Pan" FontSize="10" Foreground="White" />
+                </ToggleButton>
+
+                <!-- Zoom 도구 / Zoom tool -->
+                <ToggleButton Style="{StaticResource ToolButtonStyle}"
+                              IsChecked="{Binding CurrentTool, Converter={StaticResource ToolEnumConverter}, ConverterParameter=Zoom}"
+                              Command="{Binding SelectToolCommand}"
+                              CommandParameter="Zoom"
+                              ToolTip="Zoom"
+                              Margin="0,4,0,0">
+                    <TextBlock Text="Zoom" FontSize="10" Foreground="White" />
+                </ToggleButton>
+
+                <!-- Window/Level 도구 / Window/Level tool -->
+                <ToggleButton Style="{StaticResource ToolButtonStyle}"
+                              IsChecked="{Binding CurrentTool, Converter={StaticResource ToolEnumConverter}, ConverterParameter=WindowLevel}"
+                              Command="{Binding SelectToolCommand}"
+                              CommandParameter="WindowLevel"
+                              ToolTip="Window/Level"
+                              Margin="0,4,0,0">
+                    <TextBlock Text="W/L" FontSize="10" Foreground="White" />
+                </ToggleButton>
+
+                <Separator Margin="0,8" Background="#3E3E3E" />
+
+                <!-- 리셋 / Reset -->
+                <Button Style="{StaticResource ToolbarButtonStyle}"
+                        Command="{Binding ResetViewCommand}"
+                        ToolTip="Reset View"
+                        Padding="4">
+                    <TextBlock Text="Reset" FontSize="10" Foreground="White" />
+                </Button>
+
+                <!-- Zoom In -->
+                <Button Style="{StaticResource ToolbarButtonStyle}"
+                        Command="{Binding ZoomInCommand}"
+                        ToolTip="Zoom In"
+                        Padding="4"
+                        Margin="0,4,0,0">
+                    <TextBlock Text="+" FontSize="14" Foreground="White" FontWeight="Bold" />
+                </Button>
+
+                <!-- Zoom Out -->
+                <Button Style="{StaticResource ToolbarButtonStyle}"
+                        Command="{Binding ZoomOutCommand}"
+                        ToolTip="Zoom Out"
+                        Padding="4"
+                        Margin="0,4,0,0">
+                    <TextBlock Text="-" FontSize="14" Foreground="White" FontWeight="Bold" />
+                </Button>
+
+                <Separator Margin="0,8" Background="#3E3E3E" />
+
+                <!-- W/L 프리셋 / W/L Presets -->
+                <TextBlock Text="Presets"
+                           Foreground="#999999"
+                           FontSize="10"
+                           HorizontalAlignment="Center"
+                           Margin="0,0,0,4" />
+
+                <Button Style="{StaticResource ToolbarButtonStyle}"
+                        Command="{Binding ApplyWindowLevelPresetCommand}"
+                        CommandParameter="Abdomen"
+                        ToolTip="CT Abdomen"
+                        Padding="4">
+                    <TextBlock Text="Abd" FontSize="10" Foreground="White" />
+                </Button>
+
+                <Button Style="{StaticResource ToolbarButtonStyle}"
+                        Command="{Binding ApplyWindowLevelPresetCommand}"
+                        CommandParameter="Lung"
+                        ToolTip="CT Lung"
+                        Padding="4"
+                        Margin="0,4,0,0">
+                    <TextBlock Text="Lung" FontSize="10" Foreground="White" />
+                </Button>
+
+                <Button Style="{StaticResource ToolbarButtonStyle}"
+                        Command="{Binding ApplyWindowLevelPresetCommand}"
+                        CommandParameter="Bone"
+                        ToolTip="CT Bone"
+                        Padding="4"
+                        Margin="0,4,0,0">
+                    <TextBlock Text="Bone" FontSize="10" Foreground="White" />
+                </Button>
+
+                <Button Style="{StaticResource ToolbarButtonStyle}"
+                        Command="{Binding ApplyWindowLevelPresetCommand}"
+                        CommandParameter="Brain"
+                        ToolTip="CT Brain"
+                        Padding="4"
+                        Margin="0,4,0,0">
+                    <TextBlock Text="Brain" FontSize="10" Foreground="White" />
+                </Button>
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>
