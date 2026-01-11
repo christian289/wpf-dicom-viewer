@@ -33,6 +33,35 @@ public sealed class FoDicomImageService : IDicomImageService
         return new WindowLevel(windowWidth, windowCenter);
     }
 
+    public bool IsValidDicomImage(string filePath)
+    {
+        try
+        {
+            var dicomFile = DicomFile.Open(filePath);
+            var dataset = dicomFile.Dataset;
+
+            // 픽셀 데이터가 있는지 확인
+            // Check if pixel data exists
+            if (!dataset.Contains(DicomTag.PixelData))
+            {
+                return false;
+            }
+
+            // 이미지 크기가 유효한지 확인
+            // Check if image dimensions are valid
+            var rows = dataset.GetSingleValueOrDefault(DicomTag.Rows, (ushort)0);
+            var columns = dataset.GetSingleValueOrDefault(DicomTag.Columns, (ushort)0);
+
+            return rows > 0 && columns > 0;
+        }
+        catch
+        {
+            // DICOM 파일이 아니거나 손상된 파일
+            // Not a DICOM file or corrupted file
+            return false;
+        }
+    }
+
     public byte[] ApplyWindowLevel(PixelData pixelData, WindowLevel windowLevel)
     {
         var width = pixelData.Width;

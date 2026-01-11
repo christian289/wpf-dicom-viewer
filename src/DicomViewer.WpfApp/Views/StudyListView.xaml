@@ -4,8 +4,9 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:viewmodels="clr-namespace:DicomViewer.ViewModels;assembly=DicomViewer.ViewModels"
+             xmlns:controls="clr-namespace:DicomViewer.UI.Controls;assembly=DicomViewer.UI"
              mc:Ignorable="d"
-             Background="#1E1E1E"
+             Background="{StaticResource BackgroundBrush}"
              d:DataContext="{d:DesignInstance Type=viewmodels:StudyListViewModel}">
 
     <Grid Margin="16">
@@ -20,12 +21,12 @@
                    Text="Study List"
                    FontSize="24"
                    FontWeight="Bold"
-                   Foreground="White"
+                   Foreground="{StaticResource ForegroundBrush}"
                    Margin="0,0,0,16" />
 
         <!-- 필터 영역 / Filter area -->
         <Border Grid.Row="1"
-                Background="#252526"
+                Background="{StaticResource SurfaceBrush}"
                 CornerRadius="4"
                 Padding="16"
                 Margin="0,0,0,16">
@@ -59,17 +60,23 @@
                             Grid.RowSpan="2"
                             VerticalAlignment="Center"
                             Orientation="Horizontal">
-                    <Button Content="Open Folder"
-                            Command="{Binding OpenFolderCommand}"
-                            Style="{StaticResource ToolbarButtonStyle}"
-                            Margin="0,0,8,0" />
-                    <Button Content="Search"
-                            Command="{Binding SearchStudiesCommand}"
-                            Style="{StaticResource ToolbarButtonStyle}"
-                            Margin="0,0,8,0" />
-                    <Button Content="Clear"
-                            Command="{Binding ClearFiltersCommand}"
-                            Style="{StaticResource ToolbarButtonStyle}" />
+                    <controls:IconButton Icon="&#xE838;"
+                                         Text="Open Folder"
+                                         ShowText="True"
+                                         Orientation="Horizontal"
+                                         Command="{Binding OpenFolderCommand}"
+                                         Margin="0,0,8,0" />
+                    <controls:IconButton Icon="&#xE721;"
+                                         Text="Search"
+                                         ShowText="True"
+                                         Orientation="Horizontal"
+                                         Command="{Binding SearchStudiesCommand}"
+                                         Margin="0,0,8,0" />
+                    <controls:IconButton Icon="&#xE894;"
+                                         Text="Clear"
+                                         ShowText="True"
+                                         Orientation="Horizontal"
+                                         Command="{Binding ClearFiltersCommand}" />
                 </StackPanel>
 
                 <!-- 현재 경로 / Current path -->
@@ -84,15 +91,14 @@
 
         <!-- Study 목록 / Study list -->
         <Border Grid.Row="2"
-                Background="#252526"
+                Background="{StaticResource SurfaceBrush}"
                 CornerRadius="4">
             <Grid>
                 <!-- 로딩 인디케이터 / Loading indicator -->
-                <TextBlock Text="Loading..."
-                           Foreground="White"
-                           HorizontalAlignment="Center"
-                           VerticalAlignment="Center"
-                           Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}" />
+                <controls:LoadingIndicator IsActive="{Binding IsLoading}"
+                                           Text="Loading studies..."
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center" />
 
                 <!-- Study 리스트 / Study list -->
                 <ListBox ItemsSource="{Binding Studies}"

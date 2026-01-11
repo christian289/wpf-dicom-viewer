@@ -1,0 +1,97 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:controls="clr-namespace:DicomViewer.UI.Controls"
+                    xmlns:converters="clr-namespace:DicomViewer.UI.Converters">
+
+    <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter" />
+    <converters:DivideBy32Converter x:Key="DivideBy32Converter" />
+
+    <Style TargetType="{x:Type controls:LoadingIndicator}">
+        <Setter Property="SpinnerSize" Value="32" />
+        <Setter Property="SpinnerThickness" Value="3" />
+        <Setter Property="SpinnerColor" Value="#0078D4" />
+        <Setter Property="TrackColor" Value="#3E3E42" />
+        <Setter Property="Foreground" Value="#CCCCCC" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type controls:LoadingIndicator}">
+                    <Grid x:Name="PART_Root"
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Center">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <!-- 스피너 / Spinner -->
+                        <Viewbox Grid.Row="0"
+                                 Width="{TemplateBinding SpinnerSize}"
+                                 Height="{TemplateBinding SpinnerSize}">
+                            <Grid Width="32" Height="32"
+                                  RenderTransformOrigin="0.5,0.5">
+                                <Grid.RenderTransform>
+                                    <RotateTransform x:Name="SpinnerRotation" Angle="0" />
+                                </Grid.RenderTransform>
+
+                                <!-- 배경 원 / Background circle -->
+                                <Ellipse Stroke="{TemplateBinding TrackColor}"
+                                         StrokeThickness="{TemplateBinding SpinnerThickness}"
+                                         Fill="Transparent" />
+
+                                <!-- 회전하는 아크 / Rotating arc -->
+                                <Path Stroke="{TemplateBinding SpinnerColor}"
+                                      StrokeThickness="{TemplateBinding SpinnerThickness}"
+                                      StrokeStartLineCap="Round"
+                                      StrokeEndLineCap="Round">
+                                    <Path.Data>
+                                        <PathGeometry>
+                                            <PathFigure StartPoint="16,3">
+                                                <ArcSegment Point="29,16"
+                                                            Size="13,13"
+                                                            SweepDirection="Clockwise"
+                                                            IsLargeArc="False" />
+                                            </PathFigure>
+                                        </PathGeometry>
+                                    </Path.Data>
+                                </Path>
+                            </Grid>
+                        </Viewbox>
+
+                        <!-- 텍스트 / Text -->
+                        <TextBlock Grid.Row="1"
+                                   Text="{TemplateBinding Text}"
+                                   Foreground="{TemplateBinding Foreground}"
+                                   FontSize="12"
+                                   Margin="0,8,0,0"
+                                   HorizontalAlignment="Center"
+                                   Visibility="{TemplateBinding ShowText, Converter={StaticResource BoolToVisibilityConverter}}" />
+                    </Grid>
+
+                    <ControlTemplate.Triggers>
+                        <!-- 활성 상태일 때 회전 애니메이션 / Rotation animation when active -->
+                        <Trigger Property="IsActive" Value="True">
+                            <Trigger.EnterActions>
+                                <BeginStoryboard x:Name="SpinStoryboard">
+                                    <Storyboard RepeatBehavior="Forever">
+                                        <DoubleAnimation Storyboard.TargetName="SpinnerRotation"
+                                                         Storyboard.TargetProperty="Angle"
+                                                         From="0" To="360"
+                                                         Duration="0:0:1" />
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.EnterActions>
+                            <Trigger.ExitActions>
+                                <StopStoryboard BeginStoryboardName="SpinStoryboard" />
+                            </Trigger.ExitActions>
+                        </Trigger>
+                        <!-- 비활성 상태일 때 숨기기 / Hide when inactive -->
+                        <Trigger Property="IsActive" Value="False">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+</ResourceDictionary>

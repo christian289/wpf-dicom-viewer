@@ -10,6 +10,7 @@ public sealed partial class MainWindowViewModel : ObservableRecipient
 {
     private readonly StudyListViewModel _studyListViewModel;
     private readonly ViewerViewModel _viewerViewModel;
+    private readonly TciaExplorerViewModel _tciaExplorerViewModel;
 
     [ObservableProperty]
     private ObservableObject? _currentViewModel;
@@ -22,10 +23,12 @@ public sealed partial class MainWindowViewModel : ObservableRecipient
 
     public MainWindowViewModel(
         StudyListViewModel studyListViewModel,
-        ViewerViewModel viewerViewModel)
+        ViewerViewModel viewerViewModel,
+        TciaExplorerViewModel tciaExplorerViewModel)
     {
         _studyListViewModel = studyListViewModel;
         _viewerViewModel = viewerViewModel;
+        _tciaExplorerViewModel = tciaExplorerViewModel;
 
         CurrentViewModel = _studyListViewModel;
 
@@ -50,6 +53,13 @@ public sealed partial class MainWindowViewModel : ObservableRecipient
             r._viewerViewModel.LoadStudy(m.Study);
             r.CurrentViewModel = r._viewerViewModel;
         });
+
+        Messenger.Register<MainWindowViewModel, OpenFolderMessage>(this, (r, m) =>
+        {
+            r._viewerViewModel.LoadFromFolder(m.FolderPath);
+            r.CurrentViewModel = r._viewerViewModel;
+            r.StatusMessage = $"폴더 로드 완료: {m.FolderPath} / Folder loaded: {m.FolderPath}";
+        });
     }
 
     private void HandleNavigation(NavigationMessage message)
@@ -58,6 +68,7 @@ public sealed partial class MainWindowViewModel : ObservableRecipient
         {
             "StudyList" => _studyListViewModel,
             "Viewer" => _viewerViewModel,
+            "TciaExplorer" => _tciaExplorerViewModel,
             _ => CurrentViewModel
         };
     }
@@ -72,5 +83,11 @@ public sealed partial class MainWindowViewModel : ObservableRecipient
     private void NavigateToViewer()
     {
         CurrentViewModel = _viewerViewModel;
+    }
+
+    [RelayCommand]
+    private void NavigateToTciaExplorer()
+    {
+        CurrentViewModel = _tciaExplorerViewModel;
     }
 }

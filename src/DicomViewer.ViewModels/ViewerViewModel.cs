@@ -43,10 +43,24 @@ public sealed partial class ViewerViewModel : ObservableRecipient
     // 네비게이션
     // Navigation
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SliceDisplayNumber))]
     private int _currentSliceIndex;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(MaxSliceIndex))]
     private int _totalSliceCount;
+
+    /// <summary>
+    /// 슬라이더 Maximum 값 (0-based 인덱스 최대값)
+    /// Slider maximum value (0-based index maximum)
+    /// </summary>
+    public int MaxSliceIndex => Math.Max(0, TotalSliceCount - 1);
+
+    /// <summary>
+    /// 사용자 표시용 슬라이스 번호 (1-based)
+    /// Slice number for user display (1-based)
+    /// </summary>
+    public int SliceDisplayNumber => CurrentSliceIndex + 1;
 
     // 시리즈 목록
     // Series list
@@ -60,6 +74,11 @@ public sealed partial class ViewerViewModel : ObservableRecipient
     // Current tool
     [ObservableProperty]
     private ViewerTool _currentTool = ViewerTool.WindowLevel;
+
+    // 로딩 상태
+    // Loading state
+    [ObservableProperty]
+    private bool _isLoading;
 
     // 환자/Study 정보
     // Patient/Study information
@@ -83,6 +102,10 @@ public sealed partial class ViewerViewModel : ObservableRecipient
     {
         _imageService = imageService;
         _navigationService = navigationService;
+
+        // Messenger 활성화
+        // Enable Messenger
+        IsActive = true;
     }
 
     public void LoadStudy(DicomStudyDto study)
@@ -97,6 +120,79 @@ public sealed partial class ViewerViewModel : ObservableRecipient
         {
             SelectedSeries = SeriesList[0];
         }
+    }
+
+    /// <summary>
+    /// 폴더에서 DICOM 파일 로드
+    /// Load DICOM files from folder
+    /// </summary>
+    public void LoadFromFolder(string folderPath)
+    {
+        if (!Directory.Exists(folderPath)) return;
+
+        // DICOM 파일 검색 - 모든 파일 검색 후 디렉토리 제외
+        // Search for DICOM files - get all files excluding directories
+        var allFiles = Directory.GetFiles(folderPath, "*", SearchOption.AllDirectories)
+            .Where(f => !f.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+            .Where(f => !f.EndsWith(".txt", StringComparison.OrdinalIgnoreCase))
+            .Where(f => !f.EndsWith(".xml", StringComparison.OrdinalIgnoreCase))
+            .Where(f => !f.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+
+        // .dcm 파일 우선, 없으면 모든 파일 사용
+        // Prefer .dcm files, otherwise use all files
+        var dcmFiles = allFiles.Where(f => f.EndsWith(".dcm", StringComparison.OrdinalIgnoreCase)).ToArray();
+        if (dcmFiles.Length == 0)
+        {
+            dcmFiles = allFiles;
+        }
+
+        if (dcmFiles.Length == 0) return;
+
+        // 유효한 DICOM 이미지 파일만 필터링 (픽셀 데이터가 있는 파일)
+        // Filter only valid DICOM image files (files with pixel data)
+        var validDicomFiles = dcmFiles.Where(f => _imageService.IsValidDicomImage(f)).ToArray();
+
+        if (validDicomFiles.Length == 0)
+        {
+            Messenger.Send(new StatusMessage("유효한 DICOM 이미지 파일을 찾을 수 없습니다. / No valid DICOM image files found.", true));
+            return;
+        }
+
+        // 인스턴스 생성
+        // Create instances
+        var instances = validDicomFiles.Select((f, i) => new DicomInstanceDto(
+            SopInstanceUid: Path.GetFileNameWithoutExtension(f),
+            InstanceNumber: i + 1,
+            FilePath: f,
+            Rows: 512,
+            Columns: 512,
+            SliceLocation: null)).ToList();
+
+        // 시리즈 생성
+        // Create series
+        var series = new DicomSeriesDto(
+            SeriesInstanceUid: Path.GetFileName(folderPath),
+            SeriesNumber: 1,
+            Modality: "TCIA",
+            SeriesDescription: "TCIA Downloaded Series",
+            NumberOfInstances: instances.Count,
+            Instances: instances);
+
+        PatientName = "TCIA Patient";
+        PatientId = "TCIA";
+        StudyDescription = $"TCIA Downloaded Study ({instances.Count} images)";
+
+        SeriesList = [series];
+        SelectedSeries = series;
+
+        // 상태 메시지 전송 (스킵된 파일 수 포함)
+        // Send status message (including skipped file count)
+        var skippedCount = dcmFiles.Length - validDicomFiles.Length;
+        var message = skippedCount > 0
+            ? $"{instances.Count}개 이미지 로드됨 ({skippedCount}개 파일 스킵) / {instances.Count} images loaded ({skippedCount} files skipped)"
+            : $"{instances.Count}개 이미지 로드됨 / {instances.Count} images loaded";
+        Messenger.Send(new StatusMessage(message, false));
     }
 
     partial void OnSelectedSeriesChanged(DicomSeriesDto? value)
@@ -123,11 +219,24 @@ public sealed partial class ViewerViewModel : ObservableRecipient
         _ = RefreshImageAsync();
     }
 
+    partial void OnCurrentSliceIndexChanged(int oldValue, int newValue)
+    {
+        // 네비게이션 서비스의 인덱스와 다른 경우에만 이미지 로드 (슬라이더 직접 조작 시)
+        // Only load image when different from navigation service index (slider direct manipulation)
+        if (_navigationService.CurrentIndex != newValue)
+        {
+            _navigationService.NavigateToIndex(newValue);
+            _ = LoadCurrentImageAsync();
+        }
+    }
+
     [RelayCommand]
     private async Task LoadCurrentImageAsync()
     {
         var instance = _navigationService.GetCurrentInstance();
         if (instance is null) return;
+
+        IsLoading = true;
 
         try
         {
@@ -150,6 +259,10 @@ public sealed partial class ViewerViewModel : ObservableRecipient
         catch (Exception ex)
         {
             Messenger.Send(new StatusMessage($"이미지 로드 실패: {ex.Message} / Failed to load image: {ex.Message}", true));
+        }
+        finally
+        {
+            IsLoading = false;
         }
     }
 

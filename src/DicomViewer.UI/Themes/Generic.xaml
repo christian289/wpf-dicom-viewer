@@ -2,7 +2,14 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <ResourceDictionary.MergedDictionaries>
+        <!-- 기존 컨트롤 / Existing controls -->
         <ResourceDictionary Source="/DicomViewer.UI;component/Themes/DicomImageViewer.xaml" />
+
+        <!-- 새 커스텀 컨트롤 / New custom controls -->
+        <ResourceDictionary Source="/DicomViewer.UI;component/Themes/IconButton.xaml" />
+        <ResourceDictionary Source="/DicomViewer.UI;component/Themes/IconToggleButton.xaml" />
+        <ResourceDictionary Source="/DicomViewer.UI;component/Themes/ModernSlider.xaml" />
+        <ResourceDictionary Source="/DicomViewer.UI;component/Themes/LoadingIndicator.xaml" />
     </ResourceDictionary.MergedDictionaries>
 
 </ResourceDictionary>

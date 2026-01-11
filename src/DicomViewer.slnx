@@ -2,6 +2,7 @@
   <Project Path="DicomViewer.Application/DicomViewer.Application.csproj" />
   <Project Path="DicomViewer.Domain/DicomViewer.Domain.csproj" />
   <Project Path="DicomViewer.Infrastructure/DicomViewer.Infrastructure.csproj" />
+  <Project Path="DicomViewer.Tests/DicomViewer.Tests.csproj" />
   <Project Path="DicomViewer.UI/DicomViewer.UI.csproj" />
   <Project Path="DicomViewer.ViewModels/DicomViewer.ViewModels.csproj" />
   <Project Path="DicomViewer.WpfApp/DicomViewer.WpfApp.csproj" />

@@ -6,18 +6,18 @@
              xmlns:viewmodels="clr-namespace:DicomViewer.ViewModels;assembly=DicomViewer.ViewModels"
              xmlns:controls="clr-namespace:DicomViewer.UI.Controls;assembly=DicomViewer.UI"
              mc:Ignorable="d"
-             Background="#1E1E1E"
+             Background="{StaticResource BackgroundBrush}"
              d:DataContext="{d:DesignInstance Type=viewmodels:ViewerViewModel}">
 
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="220" />
+            <ColumnDefinition Width="240" />
             <ColumnDefinition Width="*" />
-            <ColumnDefinition Width="50" />
+            <ColumnDefinition Width="60" />
         </Grid.ColumnDefinitions>
 
-        <!-- 왼쪽: 시리즈 목록 / Left: Series list -->
-        <Border Grid.Column="0" Background="#252526">
+        <!-- ===== 왼쪽: 시리즈 목록 / Left: Series list ===== -->
+        <Border Grid.Column="0" Background="{StaticResource SurfaceBrush}">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
@@ -25,66 +25,109 @@
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
 
-                <!-- 환자 정보 / Patient info -->
-                <Border Grid.Row="0" Background="#2D2D30" Padding="12">
-                    <StackPanel>
-                        <TextBlock Text="{Binding PatientName}"
-                                   Foreground="White"
-                                   FontWeight="Bold"
-                                   FontSize="14"
-                                   TextTrimming="CharacterEllipsis" />
+                <!-- 환자 정보 카드 / Patient info card -->
+                <Border Grid.Row="0" Background="{StaticResource SurfaceHoverBrush}"
+                        CornerRadius="0,0,8,8" Margin="12,0,12,12">
+                    <StackPanel Margin="16">
+                        <!-- 환자 아이콘 + 이름 / Patient icon + name -->
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE77B;"
+                                       FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                       FontSize="20"
+                                       Foreground="{StaticResource PrimaryBrush}"
+                                       VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding PatientName}"
+                                       Foreground="{StaticResource ForegroundBrush}"
+                                       FontWeight="SemiBold"
+                                       FontSize="14"
+                                       TextTrimming="CharacterEllipsis"
+                                       VerticalAlignment="Center"
+                                       Margin="10,0,0,0" />
+                        </StackPanel>
+                        <!-- 환자 ID / Patient ID -->
                         <TextBlock Text="{Binding PatientId}"
-                                   Foreground="#999999"
+                                   Foreground="{StaticResource ForegroundSubtleBrush}"
                                    FontSize="12"
-                                   Margin="0,4,0,0" />
+                                   Margin="30,6,0,0" />
+                        <!-- Study 설명 / Study description -->
                         <TextBlock Text="{Binding StudyDescription}"
-                                   Foreground="#999999"
+                                   Foreground="{StaticResource ForegroundSecondaryBrush}"
                                    FontSize="12"
                                    TextTrimming="CharacterEllipsis"
-                                   Margin="0,4,0,0" />
+                                   Margin="30,4,0,0" />
                     </StackPanel>
                 </Border>
 
                 <!-- 시리즈 헤더 / Series header -->
-                <TextBlock Grid.Row="1"
-                           Text="Series"
-                           Foreground="#999999"
-                           FontSize="12"
-                           Margin="12,12,12,8" />
+                <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="16,8,16,8">
+                    <TextBlock Text="&#xE8B7;"
+                               FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                               FontSize="14"
+                               Foreground="{StaticResource ForegroundSubtleBrush}"
+                               VerticalAlignment="Center" />
+                    <TextBlock Text="SERIES"
+                               Foreground="{StaticResource ForegroundSubtleBrush}"
+                               FontSize="11"
+                               FontWeight="SemiBold"
+                               VerticalAlignment="Center"
+                               Margin="8,0,0,0" />
+                </StackPanel>
 
                 <!-- 시리즈 리스트 / Series list -->
                 <ListBox Grid.Row="2"
                          ItemsSource="{Binding SeriesList}"
                          SelectedItem="{Binding SelectedSeries}"
                          Style="{StaticResource DarkListBoxStyle}"
-                         ItemContainerStyle="{StaticResource DarkListBoxItemStyle}">
+                         ItemContainerStyle="{StaticResource DarkListBoxItemStyle}"
+                         Margin="8,0,8,8">
                     <ListBox.ItemTemplate>
                         <DataTemplate>
-                            <StackPanel Margin="4">
-                                <TextBlock Text="{Binding SeriesDescription}"
-                                           Foreground="White"
-                                           TextTrimming="CharacterEllipsis"
-                                           FontSize="12" />
-                                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+
+                                <!-- 모달리티 배지 / Modality badge -->
+                                <Border Grid.Column="0"
+                                        Background="{StaticResource PrimaryBrush}"
+                                        CornerRadius="4"
+                                        Padding="6,3"
+                                        VerticalAlignment="Center">
                                     <TextBlock Text="{Binding Modality}"
-                                               Foreground="#007ACC"
-                                               FontSize="11"
+                                               Foreground="White"
+                                               FontSize="10"
                                                FontWeight="Bold" />
-                                    <TextBlock Foreground="#999999"
-                                               FontSize="11"
-                                               Margin="8,0,0,0">
-                                        <Run Text="{Binding NumberOfInstances, Mode=OneWay}" />
-                                        <Run Text=" images" />
-                                    </TextBlock>
+                                </Border>
+
+                                <!-- 시리즈 정보 / Series info -->
+                                <StackPanel Grid.Column="1" Margin="10,0,0,0">
+                                    <TextBlock Text="{Binding SeriesDescription}"
+                                               Foreground="{StaticResource ForegroundBrush}"
+                                               TextTrimming="CharacterEllipsis"
+                                               FontSize="12" />
+                                    <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                        <TextBlock Text="&#xEB9F;"
+                                                   FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                                   FontSize="10"
+                                                   Foreground="{StaticResource ForegroundSubtleBrush}"
+                                                   VerticalAlignment="Center" />
+                                        <TextBlock Foreground="{StaticResource ForegroundSubtleBrush}"
+                                                   FontSize="11"
+                                                   Margin="4,0,0,0">
+                                            <Run Text="{Binding NumberOfInstances, Mode=OneWay}" />
+                                            <Run Text=" images" />
+                                        </TextBlock>
+                                    </StackPanel>
                                 </StackPanel>
-                            </StackPanel>
+                            </Grid>
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                 </ListBox>
             </Grid>
         </Border>
 
-        <!-- 중앙: DICOM 이미지 뷰어 / Center: DICOM image viewer -->
+        <!-- ===== 중앙: DICOM 이미지 뷰어 / Center: DICOM image viewer ===== -->
         <Grid Grid.Column="1">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*" />
@@ -112,143 +155,199 @@
                 </controls:DicomImageViewer.ImageSource>
             </controls:DicomImageViewer>
 
+            <!-- 로딩 인디케이터 / Loading indicator -->
+            <controls:LoadingIndicator IsActive="{Binding IsLoading}"
+                                       SpinnerSize="48"
+                                       Text="Loading..."
+                                       ShowText="True"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center" />
+
             <!-- 슬라이스 슬라이더 / Slice slider -->
-            <Border Grid.Row="1" Background="#2D2D30" Padding="16,8">
-                <Grid>
+            <Border Grid.Row="1" Background="{StaticResource SurfaceHoverBrush}"
+                    CornerRadius="8,8,0,0" Margin="16,0,16,0">
+                <Grid Margin="16,12">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
 
-                    <TextBlock Grid.Column="0"
-                               Text="{Binding CurrentSliceIndex}"
-                               Foreground="White"
-                               VerticalAlignment="Center"
-                               Width="40" />
+                    <!-- 현재 슬라이스 / Current slice (1-based for display) -->
+                    <Border Grid.Column="0"
+                            Background="{StaticResource PrimaryBrush}"
+                            CornerRadius="4"
+                            Padding="8,4"
+                            MinWidth="40">
+                        <TextBlock Text="{Binding SliceDisplayNumber}"
+                                   Foreground="White"
+                                   FontWeight="SemiBold"
+                                   HorizontalAlignment="Center" />
+                    </Border>
 
-                    <Slider Grid.Column="1"
-                            Minimum="0"
-                            Maximum="{Binding TotalSliceCount}"
-                            Value="{Binding CurrentSliceIndex}"
-                            Style="{StaticResource SliceSliderStyle}"
-                            VerticalAlignment="Center"
-                            Margin="8,0" />
+                    <!-- 슬라이더 / Slider -->
+                    <controls:ModernSlider Grid.Column="1"
+                                           Minimum="0"
+                                           Maximum="{Binding MaxSliceIndex}"
+                                           Value="{Binding CurrentSliceIndex}"
+                                           VerticalAlignment="Center"
+                                           Margin="16,0" />
 
-                    <TextBlock Grid.Column="2"
-                               Text="{Binding TotalSliceCount}"
-                               Foreground="White"
-                               VerticalAlignment="Center"
-                               Width="40"
-                               TextAlignment="Right" />
+                    <!-- 총 슬라이스 / Total slices -->
+                    <Border Grid.Column="2"
+                            Background="{StaticResource SurfaceBrush}"
+                            CornerRadius="4"
+                            Padding="8,4"
+                            MinWidth="40">
+                        <TextBlock Text="{Binding TotalSliceCount}"
+                                   Foreground="{StaticResource ForegroundSecondaryBrush}"
+                                   HorizontalAlignment="Center" />
+                    </Border>
                 </Grid>
             </Border>
         </Grid>
 
-        <!-- 오른쪽: 도구 패널 / Right: Tools panel -->
-        <Border Grid.Column="2" Background="#2D2D30">
-            <StackPanel Margin="5">
-                <!-- Pan 도구 / Pan tool -->
-                <ToggleButton Style="{StaticResource ToolButtonStyle}"
-                              IsChecked="{Binding CurrentTool, Converter={StaticResource ToolEnumConverter}, ConverterParameter=Pan}"
-                              Command="{Binding SelectToolCommand}"
-                              CommandParameter="Pan"
-                              ToolTip="Pan (Drag)">
-                    <TextBlock Text="Pan" FontSize="10" Foreground="White" />
-                </ToggleButton>
+        <!-- ===== 오른쪽: 도구 패널 / Right: Tools panel ===== -->
+        <Border Grid.Column="2" Background="{StaticResource SurfaceHoverBrush}">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel Margin="8,12">
+                    <!-- 도구 섹션 / Tools section -->
+                    <TextBlock Text="TOOLS"
+                               Foreground="{StaticResource ForegroundSubtleBrush}"
+                               FontSize="9"
+                               FontWeight="SemiBold"
+                               HorizontalAlignment="Center"
+                               Margin="0,0,0,8" />
 
-                <!-- Zoom 도구 / Zoom tool -->
-                <ToggleButton Style="{StaticResource ToolButtonStyle}"
-                              IsChecked="{Binding CurrentTool, Converter={StaticResource ToolEnumConverter}, ConverterParameter=Zoom}"
-                              Command="{Binding SelectToolCommand}"
-                              CommandParameter="Zoom"
-                              ToolTip="Zoom"
-                              Margin="0,4,0,0">
-                    <TextBlock Text="Zoom" FontSize="10" Foreground="White" />
-                </ToggleButton>
+                    <!-- Pan 도구 / Pan tool -->
+                    <controls:IconToggleButton
+                        Icon="&#xE8B0;"
+                        Text="Pan"
+                        ShowText="True"
+                        IconSize="18"
+                        IsChecked="{Binding CurrentTool, Converter={StaticResource ToolEnumConverter}, ConverterParameter=Pan}"
+                        Command="{Binding SelectToolCommand}"
+                        CommandParameter="{x:Static viewmodels:ViewerTool.Pan}"
+                        ToolTip="Pan - Drag to move image"
+                        Margin="0,2" />
 
-                <!-- Window/Level 도구 / Window/Level tool -->
-                <ToggleButton Style="{StaticResource ToolButtonStyle}"
-                              IsChecked="{Binding CurrentTool, Converter={StaticResource ToolEnumConverter}, ConverterParameter=WindowLevel}"
-                              Command="{Binding SelectToolCommand}"
-                              CommandParameter="WindowLevel"
-                              ToolTip="Window/Level"
-                              Margin="0,4,0,0">
-                    <TextBlock Text="W/L" FontSize="10" Foreground="White" />
-                </ToggleButton>
+                    <!-- Zoom 도구 / Zoom tool -->
+                    <controls:IconToggleButton
+                        Icon="&#xE71E;"
+                        Text="Zoom"
+                        ShowText="True"
+                        IconSize="18"
+                        IsChecked="{Binding CurrentTool, Converter={StaticResource ToolEnumConverter}, ConverterParameter=Zoom}"
+                        Command="{Binding SelectToolCommand}"
+                        CommandParameter="{x:Static viewmodels:ViewerTool.Zoom}"
+                        ToolTip="Zoom - Drag up/down to zoom"
+                        Margin="0,2" />
 
-                <Separator Margin="0,8" Background="#3E3E3E" />
+                    <!-- Window/Level 도구 / Window/Level tool -->
+                    <controls:IconToggleButton
+                        Icon="&#xE793;"
+                        Text="W/L"
+                        ShowText="True"
+                        IconSize="18"
+                        IsChecked="{Binding CurrentTool, Converter={StaticResource ToolEnumConverter}, ConverterParameter=WindowLevel}"
+                        Command="{Binding SelectToolCommand}"
+                        CommandParameter="{x:Static viewmodels:ViewerTool.WindowLevel}"
+                        ToolTip="Window/Level - Adjust brightness/contrast"
+                        Margin="0,2" />
 
-                <!-- 리셋 / Reset -->
-                <Button Style="{StaticResource ToolbarButtonStyle}"
+                    <Separator Background="{StaticResource BorderSubtleBrush}"
+                               Margin="4,12" />
+
+                    <!-- 액션 버튼 / Action buttons -->
+                    <TextBlock Text="ACTIONS"
+                               Foreground="{StaticResource ForegroundSubtleBrush}"
+                               FontSize="9"
+                               FontWeight="SemiBold"
+                               HorizontalAlignment="Center"
+                               Margin="0,0,0,8" />
+
+                    <!-- 리셋 / Reset -->
+                    <controls:IconButton
+                        Icon="&#xE72C;"
+                        Text="Reset"
+                        ShowText="True"
+                        IconSize="16"
                         Command="{Binding ResetViewCommand}"
-                        ToolTip="Reset View"
-                        Padding="4">
-                    <TextBlock Text="Reset" FontSize="10" Foreground="White" />
-                </Button>
+                        ToolTip="Reset all transformations"
+                        Margin="0,2" />
 
-                <!-- Zoom In -->
-                <Button Style="{StaticResource ToolbarButtonStyle}"
+                    <!-- Zoom In -->
+                    <controls:IconButton
+                        Icon="&#xE8A3;"
+                        IconSize="16"
                         Command="{Binding ZoomInCommand}"
                         ToolTip="Zoom In"
-                        Padding="4"
-                        Margin="0,4,0,0">
-                    <TextBlock Text="+" FontSize="14" Foreground="White" FontWeight="Bold" />
-                </Button>
+                        Margin="0,2" />
 
-                <!-- Zoom Out -->
-                <Button Style="{StaticResource ToolbarButtonStyle}"
+                    <!-- Zoom Out -->
+                    <controls:IconButton
+                        Icon="&#xE71F;"
+                        IconSize="16"
                         Command="{Binding ZoomOutCommand}"
                         ToolTip="Zoom Out"
-                        Padding="4"
-                        Margin="0,4,0,0">
-                    <TextBlock Text="-" FontSize="14" Foreground="White" FontWeight="Bold" />
-                </Button>
+                        Margin="0,2" />
 
-                <Separator Margin="0,8" Background="#3E3E3E" />
+                    <Separator Background="{StaticResource BorderSubtleBrush}"
+                               Margin="4,12" />
 
-                <!-- W/L 프리셋 / W/L Presets -->
-                <TextBlock Text="Presets"
-                           Foreground="#999999"
-                           FontSize="10"
-                           HorizontalAlignment="Center"
-                           Margin="0,0,0,4" />
+                    <!-- W/L 프리셋 / W/L Presets -->
+                    <TextBlock Text="PRESETS"
+                               Foreground="{StaticResource ForegroundSubtleBrush}"
+                               FontSize="9"
+                               FontWeight="SemiBold"
+                               HorizontalAlignment="Center"
+                               Margin="0,0,0,8" />
 
-                <Button Style="{StaticResource ToolbarButtonStyle}"
+                    <!-- CT Abdomen -->
+                    <controls:IconButton
+                        Icon="&#xEBD2;"
+                        Text="Abd"
+                        ShowText="True"
+                        IconSize="14"
                         Command="{Binding ApplyWindowLevelPresetCommand}"
                         CommandParameter="Abdomen"
-                        ToolTip="CT Abdomen"
-                        Padding="4">
-                    <TextBlock Text="Abd" FontSize="10" Foreground="White" />
-                </Button>
+                        ToolTip="CT Abdomen (W:400 L:40)"
+                        Margin="0,2" />
 
-                <Button Style="{StaticResource ToolbarButtonStyle}"
+                    <!-- CT Lung -->
+                    <controls:IconButton
+                        Icon="&#xE95E;"
+                        Text="Lung"
+                        ShowText="True"
+                        IconSize="14"
                         Command="{Binding ApplyWindowLevelPresetCommand}"
                         CommandParameter="Lung"
-                        ToolTip="CT Lung"
-                        Padding="4"
-                        Margin="0,4,0,0">
-                    <TextBlock Text="Lung" FontSize="10" Foreground="White" />
-                </Button>
+                        ToolTip="CT Lung (W:1500 L:-600)"
+                        Margin="0,2" />
 
-                <Button Style="{StaticResource ToolbarButtonStyle}"
+                    <!-- CT Bone -->
+                    <controls:IconButton
+                        Icon="&#xE9D9;"
+                        Text="Bone"
+                        ShowText="True"
+                        IconSize="14"
                         Command="{Binding ApplyWindowLevelPresetCommand}"
                         CommandParameter="Bone"
-                        ToolTip="CT Bone"
-                        Padding="4"
-                        Margin="0,4,0,0">
-                    <TextBlock Text="Bone" FontSize="10" Foreground="White" />
-                </Button>
+                        ToolTip="CT Bone (W:2000 L:400)"
+                        Margin="0,2" />
 
-                <Button Style="{StaticResource ToolbarButtonStyle}"
+                    <!-- CT Brain -->
+                    <controls:IconButton
+                        Icon="&#xE94E;"
+                        Text="Brain"
+                        ShowText="True"
+                        IconSize="14"
                         Command="{Binding ApplyWindowLevelPresetCommand}"
                         CommandParameter="Brain"
-                        ToolTip="CT Brain"
-                        Padding="4"
-                        Margin="0,4,0,0">
-                    <TextBlock Text="Brain" FontSize="10" Foreground="White" />
-                </Button>
-            </StackPanel>
+                        ToolTip="CT Brain (W:80 L:40)"
+                        Margin="0,2" />
+                </StackPanel>
+            </ScrollViewer>
         </Border>
     </Grid>
 </UserControl>

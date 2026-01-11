@@ -4,12 +4,13 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:viewmodels="clr-namespace:DicomViewer.ViewModels;assembly=DicomViewer.ViewModels"
+        xmlns:controls="clr-namespace:DicomViewer.UI.Controls;assembly=DicomViewer.UI"
         mc:Ignorable="d"
         Title="DICOM Viewer - Medical Imaging Portfolio"
         Height="800" Width="1200"
         MinHeight="600" MinWidth="800"
         WindowState="Maximized"
-        Background="#1E1E1E"
+        Background="{StaticResource BackgroundBrush}"
         d:DataContext="{d:DesignInstance Type=viewmodels:MainWindowViewModel}">
 
     <Grid>
@@ -19,30 +20,55 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <!-- 상단 도구 모음 / Top Toolbar -->
-        <Border Grid.Row="0" Background="#2D2D30" Padding="8">
+        <!-- ===== 상단 도구 모음 / Top Toolbar ===== -->
+        <Border Grid.Row="0" Background="{StaticResource SurfaceHoverBrush}" Padding="12,8">
             <DockPanel>
-                <!-- 왼쪽 버튼들 / Left buttons -->
+                <!-- 왼쪽 로고 + 버튼들 / Left logo + buttons -->
                 <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
-                    <Button Content="Open Folder"
-                            Command="{Binding CurrentViewModel.OpenFolderCommand}"
-                            Style="{StaticResource ToolbarButtonStyle}"
-                            Margin="0,0,8,0" />
-                    <Button Content="Study List"
-                            Command="{Binding NavigateToStudyListCommand}"
-                            Style="{StaticResource ToolbarButtonStyle}"
-                            Margin="0,0,8,0" />
-                    <Button Content="Viewer"
-                            Command="{Binding NavigateToViewerCommand}"
-                            Style="{StaticResource ToolbarButtonStyle}" />
+                    <!-- 로고 / Logo -->
+                    <TextBlock Text="&#xE8A1;"
+                               FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                               FontSize="24"
+                               Foreground="{StaticResource PrimaryBrush}"
+                               VerticalAlignment="Center"
+                               Margin="0,0,12,0" />
+
+                    <controls:IconButton Icon="&#xE8B7;"
+                                         Text="Study List"
+                                         ShowText="True"
+                                         Orientation="Horizontal"
+                                         Command="{Binding NavigateToStudyListCommand}"
+                                         Margin="0,0,4,0" />
+
+                    <controls:IconButton Icon="&#xE7B3;"
+                                         Text="Viewer"
+                                         ShowText="True"
+                                         Orientation="Horizontal"
+                                         Command="{Binding NavigateToViewerCommand}"
+                                         Margin="0,0,4,0" />
+
+                    <Border Width="1" Background="{StaticResource BorderBrush}"
+                            Margin="12,4" />
+
+                    <controls:IconButton Icon="&#xE774;"
+                                         Text="TCIA Explorer"
+                                         ShowText="True"
+                                         Orientation="Horizontal"
+                                         Command="{Binding NavigateToTciaExplorerCommand}"
+                                         PressedBackground="{StaticResource AccentBrush}" />
                 </StackPanel>
 
                 <!-- 오른쪽 정보 / Right info -->
-                <TextBlock DockPanel.Dock="Right"
-                           Text="DICOM Viewer Portfolio v1.0"
-                           Foreground="#999999"
-                           VerticalAlignment="Center"
-                           Margin="8,0" />
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="DICOM Viewer Portfolio"
+                               Foreground="{StaticResource ForegroundSecondaryBrush}"
+                               VerticalAlignment="Center"
+                               FontWeight="SemiBold" />
+                    <TextBlock Text="v2.0"
+                               Foreground="{StaticResource ForegroundSubtleBrush}"
+                               VerticalAlignment="Center"
+                               Margin="8,0,0,0" />
+                </StackPanel>
 
                 <Border />
             </DockPanel>
@@ -52,21 +78,38 @@
         <ContentControl Grid.Row="1"
                         Content="{Binding CurrentViewModel}" />
 
-        <!-- 하단 상태 표시줄 / Bottom status bar -->
-        <Border Grid.Row="2" Padding="8,4">
+        <!-- ===== 하단 상태 표시줄 / Bottom status bar ===== -->
+        <Border Grid.Row="2" Padding="12,6">
             <Border.Style>
                 <Style TargetType="Border">
-                    <Setter Property="Background" Value="#007ACC" />
+                    <Setter Property="Background" Value="{StaticResource PrimaryBrush}" />
                     <Style.Triggers>
                         <DataTrigger Binding="{Binding IsStatusError}" Value="True">
-                            <Setter Property="Background" Value="#CA5100" />
+                            <Setter Property="Background" Value="{StaticResource ErrorBrush}" />
                         </DataTrigger>
                     </Style.Triggers>
                 </Style>
             </Border.Style>
-            <TextBlock Text="{Binding StatusMessage}"
-                       Foreground="White"
-                       FontSize="12" />
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Column="0"
+                           Text="{Binding StatusMessage}"
+                           Foreground="White"
+                           FontSize="12"
+                           VerticalAlignment="Center" />
+
+                <TextBlock Grid.Column="1"
+                           Text="{Binding Source={x:Static sys:DateTime.Now}, StringFormat=HH:mm:ss}"
+                           Foreground="White"
+                           FontSize="12"
+                           Opacity="0.7"
+                           VerticalAlignment="Center"
+                           xmlns:sys="clr-namespace:System;assembly=mscorlib" />
+            </Grid>
         </Border>
     </Grid>
 </Window>

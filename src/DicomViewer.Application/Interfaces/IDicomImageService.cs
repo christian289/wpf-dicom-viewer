@@ -33,4 +33,10 @@ public interface IDicomImageService
     /// Apply Window/Level and convert to 8-bit grayscale
     /// </summary>
     byte[] ApplyWindowLevel(PixelData pixelData, WindowLevel windowLevel);
+
+    /// <summary>
+    /// 파일이 유효한 DICOM 이미지인지 확인 (픽셀 데이터 포함 여부)
+    /// Check if file is a valid DICOM image (contains pixel data)
+    /// </summary>
+    bool IsValidDicomImage(string filePath);
 }

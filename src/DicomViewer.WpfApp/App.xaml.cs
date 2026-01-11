@@ -35,6 +35,10 @@ public partial class App : System.Windows.Application
         services.AddSingleton<IDicomImageService, FoDicomImageService>();
         services.AddSingleton<ISeriesNavigationService, SeriesNavigationService>();
 
+        // TCIA 서비스
+        // TCIA service
+        services.AddSingleton<ITciaService, DicomViewer.Infrastructure.Tcia.TciaService>();
+
         // PACS 서비스 (설정에 따라 선택)
         // PACS service (selected by configuration)
         services.AddSingleton<IPacsConnectionService>(sp =>
@@ -64,6 +68,7 @@ public partial class App : System.Windows.Application
         services.AddSingleton<MainWindowViewModel>();
         services.AddSingleton<StudyListViewModel>();
         services.AddSingleton<ViewerViewModel>();
+        services.AddSingleton<TciaExplorerViewModel>();
 
         // === Views ===
         services.AddSingleton<MainWindow>();

@@ -14,4 +14,8 @@
         <views:ViewerView />
     </DataTemplate>
 
+    <DataTemplate DataType="{x:Type viewmodels:TciaExplorerViewModel}">
+        <views:TciaExplorerView />
+    </DataTemplate>
+
 </ResourceDictionary>

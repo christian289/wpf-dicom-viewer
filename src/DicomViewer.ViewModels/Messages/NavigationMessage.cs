@@ -23,3 +23,9 @@ public sealed record SeriesSelectedMessage(DicomSeriesDto Series);
 /// Status message
 /// </summary>
 public sealed record StatusMessage(string Message, bool IsError = false);
+
+/// <summary>
+/// 폴더 열기 메시지 (TCIA 다운로드 후 뷰어로 전달)
+/// Open folder message (pass to viewer after TCIA download)
+/// </summary>
+public sealed record OpenFolderMessage(string FolderPath);
