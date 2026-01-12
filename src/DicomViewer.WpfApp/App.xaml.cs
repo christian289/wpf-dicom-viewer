@@ -39,6 +39,10 @@ public partial class App : System.Windows.Application
         // TCIA service
         services.AddSingleton<ITciaService, DicomViewer.Infrastructure.Tcia.TciaService>();
 
+        // Rubo Medical 데이터 소스
+        // Rubo Medical data source
+        services.AddSingleton<IDicomDataSource, DicomViewer.Infrastructure.DataSources.RuboMedicalDataSource>();
+
         // PACS 서비스 (설정에 따라 선택)
         // PACS service (selected by configuration)
         services.AddSingleton<IPacsConnectionService>(sp =>
@@ -59,6 +63,8 @@ public partial class App : System.Windows.Application
 
         // === Application Layer ===
         services.AddSingleton<DicomStudyService>();
+        services.AddSingleton<HistogramService>();
+        services.AddSingleton<ThumbnailService>();
 
         // === WPF Services ===
         services.AddSingleton<DicomImageRenderService>();

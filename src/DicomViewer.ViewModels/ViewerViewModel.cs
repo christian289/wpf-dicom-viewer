@@ -40,6 +40,21 @@ public sealed partial class ViewerViewModel : ObservableRecipient
     [ObservableProperty]
     private double _panY;
 
+    // 회전 각도 (도)
+    // Rotation angle (degrees)
+    [ObservableProperty]
+    private double _rotationAngle;
+
+    // 수평 반전
+    // Horizontal flip
+    [ObservableProperty]
+    private bool _flipHorizontal;
+
+    // 수직 반전
+    // Vertical flip
+    [ObservableProperty]
+    private bool _flipVertical;
+
     // 네비게이션
     // Navigation
     [ObservableProperty]
@@ -93,6 +108,45 @@ public sealed partial class ViewerViewModel : ObservableRecipient
 
     [ObservableProperty]
     private string _seriesDescription = string.Empty;
+
+    // PixelSpacing (측정용)
+    // PixelSpacing (for measurements)
+    [ObservableProperty]
+    private double _pixelSpacingX = 1.0;
+
+    [ObservableProperty]
+    private double _pixelSpacingY = 1.0;
+
+    // 히스토그램 데이터
+    // Histogram data
+    [ObservableProperty]
+    private int[]? _histogramData;
+
+    // 히스토그램 표시 여부
+    // Show histogram
+    [ObservableProperty]
+    private bool _showHistogram = true;
+
+    // 측정 모드 여부
+    // Measuring mode
+    [ObservableProperty]
+    private bool _isMeasuring;
+
+    // 측정 시작점
+    // Measurement start point
+    [ObservableProperty]
+    private double _measureStartX;
+
+    [ObservableProperty]
+    private double _measureStartY;
+
+    // 측정 끝점
+    // Measurement end point
+    [ObservableProperty]
+    private double _measureEndX;
+
+    [ObservableProperty]
+    private double _measureEndY;
 
     private PixelData? _currentPixelData;
 
@@ -254,6 +308,12 @@ public sealed partial class ViewerViewModel : ObservableRecipient
                 WindowCenter = defaultWL.WindowCenter;
             }
 
+            // PixelSpacing 로드
+            // Load PixelSpacing
+            var pixelSpacing = _imageService.GetPixelSpacing(instance.FilePath);
+            PixelSpacingX = pixelSpacing.X;
+            PixelSpacingY = pixelSpacing.Y;
+
             await RefreshImageAsync();
         }
         catch (Exception ex)
@@ -273,7 +333,20 @@ public sealed partial class ViewerViewModel : ObservableRecipient
         await Task.Run(() =>
         {
             var windowLevel = new WindowLevel(WindowWidth, WindowCenter);
-            CurrentImagePixels = _imageService.ApplyWindowLevel(_currentPixelData, windowLevel);
+            var pixels = _imageService.ApplyWindowLevel(_currentPixelData, windowLevel);
+            CurrentImagePixels = pixels;
+
+            // 히스토그램 계산
+            // Calculate histogram
+            if (ShowHistogram && pixels is not null)
+            {
+                var bins = new int[256];
+                foreach (var pixel in pixels)
+                {
+                    bins[pixel]++;
+                }
+                HistogramData = bins;
+            }
         });
     }
 
@@ -354,6 +427,9 @@ public sealed partial class ViewerViewModel : ObservableRecipient
         ZoomFactor = 1.0;
         PanX = 0;
         PanY = 0;
+        RotationAngle = 0;
+        FlipHorizontal = false;
+        FlipVertical = false;
     }
 
     [RelayCommand]
@@ -384,6 +460,70 @@ public sealed partial class ViewerViewModel : ObservableRecipient
         CurrentTool = tool;
     }
 
+    /// <summary>
+    /// 왼쪽으로 90도 회전
+    /// Rotate 90 degrees left
+    /// </summary>
+    [RelayCommand]
+    private void RotateLeft()
+    {
+        RotationAngle = (RotationAngle - 90 + 360) % 360;
+    }
+
+    /// <summary>
+    /// 오른쪽으로 90도 회전
+    /// Rotate 90 degrees right
+    /// </summary>
+    [RelayCommand]
+    private void RotateRight()
+    {
+        RotationAngle = (RotationAngle + 90) % 360;
+    }
+
+    /// <summary>
+    /// 수평 반전 토글
+    /// Toggle horizontal flip
+    /// </summary>
+    [RelayCommand]
+    private void ToggleFlipHorizontal()
+    {
+        FlipHorizontal = !FlipHorizontal;
+    }
+
+    /// <summary>
+    /// 수직 반전 토글
+    /// Toggle vertical flip
+    /// </summary>
+    [RelayCommand]
+    private void ToggleFlipVertical()
+    {
+        FlipVertical = !FlipVertical;
+    }
+
+    /// <summary>
+    /// 히스토그램 표시 토글
+    /// Toggle histogram visibility
+    /// </summary>
+    [RelayCommand]
+    private void ToggleHistogram()
+    {
+        ShowHistogram = !ShowHistogram;
+    }
+
+    /// <summary>
+    /// 현재 측정 거리 계산 (mm)
+    /// Calculate current measurement distance (mm)
+    /// </summary>
+    public double CurrentMeasurementDistanceMm
+    {
+        get
+        {
+            var dx = (MeasureEndX - MeasureStartX) * PixelSpacingX;
+            var dy = (MeasureEndY - MeasureStartY) * PixelSpacingY;
+            return Math.Sqrt(dx * dx + dy * dy);
+        }
+    }
+
     public void UpdateWindowLevel(double deltaWidth, double deltaCenter)
     {
         WindowWidth = Math.Max(1, WindowWidth + deltaWidth);
@@ -411,5 +551,7 @@ public enum ViewerTool
     None,
     Pan,
     Zoom,
-    WindowLevel
+    WindowLevel,
+    Rotate,
+    Measure
 }

@@ -13,7 +13,7 @@
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="240" />
             <ColumnDefinition Width="*" />
-            <ColumnDefinition Width="60" />
+            <ColumnDefinition Width="80" />
         </Grid.ColumnDefinitions>
 
         <!-- ===== 왼쪽: 시리즈 목록 / Left: Series list ===== -->
@@ -128,40 +128,68 @@
         </Border>
 
         <!-- ===== 중앙: DICOM 이미지 뷰어 / Center: DICOM image viewer ===== -->
-        <Grid Grid.Column="1">
+        <Grid Grid.Column="1" Background="{StaticResource BackgroundBrush}">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*" />
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <!-- 이미지 뷰어 / Image viewer -->
-            <controls:DicomImageViewer Grid.Row="0"
-                                       PatientName="{Binding PatientName}"
-                                       WindowWidth="{Binding WindowWidth, Mode=TwoWay}"
-                                       WindowCenter="{Binding WindowCenter, Mode=TwoWay}"
-                                       ZoomFactor="{Binding ZoomFactor, Mode=TwoWay}"
-                                       PanX="{Binding PanX, Mode=TwoWay}"
-                                       PanY="{Binding PanY, Mode=TwoWay}"
-                                       CurrentSlice="{Binding CurrentSliceIndex, Mode=TwoWay}"
-                                       TotalSlices="{Binding TotalSliceCount}"
-                                       CurrentTool="{Binding CurrentTool}"
-                                       SliceChanged="DicomImageViewer_SliceChanged">
-                <controls:DicomImageViewer.ImageSource>
-                    <MultiBinding Converter="{StaticResource ByteArrayToBitmapConverter}">
-                        <Binding Path="CurrentImagePixels" />
-                        <Binding Path="ImageWidth" />
-                        <Binding Path="ImageHeight" />
-                    </MultiBinding>
-                </controls:DicomImageViewer.ImageSource>
-            </controls:DicomImageViewer>
+            <!-- 이미지 뷰어 컨테이너 / Image viewer container -->
+            <Grid Grid.Row="0" Background="#1E1E1E">
+                <!-- 이미지 뷰어 / Image viewer -->
+                <controls:DicomImageViewer x:Name="ImageViewer"
+                                           PatientName="{Binding PatientName}"
+                                           WindowWidth="{Binding WindowWidth, Mode=TwoWay}"
+                                           WindowCenter="{Binding WindowCenter, Mode=TwoWay}"
+                                           ZoomFactor="{Binding ZoomFactor, Mode=TwoWay}"
+                                           PanX="{Binding PanX, Mode=TwoWay}"
+                                           PanY="{Binding PanY, Mode=TwoWay}"
+                                           RotationAngle="{Binding RotationAngle, Mode=TwoWay}"
+                                           FlipHorizontal="{Binding FlipHorizontal, Mode=TwoWay}"
+                                           FlipVertical="{Binding FlipVertical, Mode=TwoWay}"
+                                           CurrentSlice="{Binding CurrentSliceIndex, Mode=TwoWay}"
+                                           TotalSlices="{Binding TotalSliceCount}"
+                                           CurrentTool="{Binding CurrentTool}"
+                                           SliceChanged="DicomImageViewer_SliceChanged">
+                    <controls:DicomImageViewer.ImageSource>
+                        <MultiBinding Converter="{StaticResource ByteArrayToBitmapConverter}">
+                            <Binding Path="CurrentImagePixels" />
+                            <Binding Path="ImageWidth" />
+                            <Binding Path="ImageHeight" />
+                        </MultiBinding>
+                    </controls:DicomImageViewer.ImageSource>
+                </controls:DicomImageViewer>
 
-            <!-- 로딩 인디케이터 / Loading indicator -->
-            <controls:LoadingIndicator IsActive="{Binding IsLoading}"
-                                       SpinnerSize="48"
-                                       Text="Loading..."
-                                       ShowText="True"
-                                       HorizontalAlignment="Center"
-                                       VerticalAlignment="Center" />
+                <!-- 측정 오버레이 / Ruler overlay -->
+                <controls:RulerOverlay x:Name="RulerOverlay"
+                                       PixelSpacingX="{Binding PixelSpacingX}"
+                                       PixelSpacingY="{Binding PixelSpacingY}"
+                                       ZoomFactor="{Binding ZoomFactor}"
+                                       Visibility="{Binding CurrentTool, Converter={StaticResource ToolVisibilityConverter}, ConverterParameter=Measure}"
+                                       MouseLeftButtonDown="RulerOverlay_MouseLeftButtonDown"
+                                       MouseMove="RulerOverlay_MouseMove"
+                                       MouseLeftButtonUp="RulerOverlay_MouseLeftButtonUp" />
+
+                <!-- 로딩 인디케이터 / Loading indicator -->
+                <controls:LoadingIndicator IsActive="{Binding IsLoading}"
+                                           SpinnerSize="48"
+                                           Text="Loading..."
+                                           ShowText="True"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center" />
+
+                <!-- 히스토그램 뷰어 (좌하단) / Histogram viewer (bottom left) -->
+                <controls:HistogramViewer HistogramData="{Binding HistogramData}"
+                                          WindowWidth="{Binding WindowWidth}"
+                                          WindowCenter="{Binding WindowCenter}"
+                                          ShowWindowLevelOverlay="True"
+                                          Width="200"
+                                          Height="120"
+                                          HorizontalAlignment="Left"
+                                          VerticalAlignment="Bottom"
+                                          Margin="16"
+                                          Visibility="{Binding ShowHistogram, Converter={StaticResource BoolToVisConverter}}" />
+            </Grid>
 
             <!-- 슬라이스 슬라이더 / Slice slider -->
             <Border Grid.Row="1" Background="{StaticResource SurfaceHoverBrush}"
@@ -209,143 +237,259 @@
 
         <!-- ===== 오른쪽: 도구 패널 / Right: Tools panel ===== -->
         <Border Grid.Column="2" Background="{StaticResource SurfaceHoverBrush}">
-            <ScrollViewer VerticalScrollBarVisibility="Auto">
-                <StackPanel Margin="8,12">
+            <ScrollViewer VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Margin="4,8">
                     <!-- 도구 섹션 / Tools section -->
                     <TextBlock Text="TOOLS"
                                Foreground="{StaticResource ForegroundSubtleBrush}"
                                FontSize="9"
                                FontWeight="SemiBold"
                                HorizontalAlignment="Center"
-                               Margin="0,0,0,8" />
+                               Margin="0,0,0,4" />
 
                     <!-- Pan 도구 / Pan tool -->
                     <controls:IconToggleButton
                         Icon="&#xE8B0;"
-                        Text="Pan"
-                        ShowText="True"
                         IconSize="18"
                         IsChecked="{Binding CurrentTool, Converter={StaticResource ToolEnumConverter}, ConverterParameter=Pan}"
                         Command="{Binding SelectToolCommand}"
                         CommandParameter="{x:Static viewmodels:ViewerTool.Pan}"
                         ToolTip="Pan - Drag to move image"
-                        Margin="0,2" />
+                        Margin="0,1" />
 
                     <!-- Zoom 도구 / Zoom tool -->
                     <controls:IconToggleButton
                         Icon="&#xE71E;"
-                        Text="Zoom"
-                        ShowText="True"
                         IconSize="18"
                         IsChecked="{Binding CurrentTool, Converter={StaticResource ToolEnumConverter}, ConverterParameter=Zoom}"
                         Command="{Binding SelectToolCommand}"
                         CommandParameter="{x:Static viewmodels:ViewerTool.Zoom}"
                         ToolTip="Zoom - Drag up/down to zoom"
-                        Margin="0,2" />
+                        Margin="0,1" />
 
                     <!-- Window/Level 도구 / Window/Level tool -->
                     <controls:IconToggleButton
                         Icon="&#xE793;"
-                        Text="W/L"
-                        ShowText="True"
                         IconSize="18"
                         IsChecked="{Binding CurrentTool, Converter={StaticResource ToolEnumConverter}, ConverterParameter=WindowLevel}"
                         Command="{Binding SelectToolCommand}"
                         CommandParameter="{x:Static viewmodels:ViewerTool.WindowLevel}"
                         ToolTip="Window/Level - Adjust brightness/contrast"
-                        Margin="0,2" />
+                        Margin="0,1" />
+
+                    <!-- Measure 도구 / Measure tool -->
+                    <controls:IconToggleButton
+                        Icon="&#xECC6;"
+                        IconSize="18"
+                        IsChecked="{Binding CurrentTool, Converter={StaticResource ToolEnumConverter}, ConverterParameter=Measure}"
+                        Command="{Binding SelectToolCommand}"
+                        CommandParameter="{x:Static viewmodels:ViewerTool.Measure}"
+                        Margin="0,1">
+                        <controls:IconToggleButton.ToolTip>
+                            <ToolTip>
+                                <StackPanel>
+                                    <TextBlock Text="거리 측정 도구" FontWeight="SemiBold" />
+                                    <TextBlock Text="사용법: 이미지 위에서 드래그하여" />
+                                    <TextBlock Text="두 점 사이 거리를 측정합니다." />
+                                    <TextBlock Text="(PixelSpacing 기반 mm 단위)"
+                                               Foreground="Gray" FontSize="10" Margin="0,4,0,0" />
+                                </StackPanel>
+                            </ToolTip>
+                        </controls:IconToggleButton.ToolTip>
+                    </controls:IconToggleButton>
+
+                    <!-- 측정 초기화 버튼 / Clear measurements button -->
+                    <controls:IconButton
+                        Icon="&#xE74D;"
+                        IconSize="14"
+                        Foreground="{StaticResource ErrorBrush}"
+                        Click="ClearMeasurements_Click"
+                        Margin="0,1">
+                        <controls:IconButton.ToolTip>
+                            <ToolTip>
+                                <TextBlock Text="측정선 모두 삭제" />
+                            </ToolTip>
+                        </controls:IconButton.ToolTip>
+                    </controls:IconButton>
 
                     <Separator Background="{StaticResource BorderSubtleBrush}"
-                               Margin="4,12" />
+                               Margin="2,6" />
+
+                    <!-- 변환 버튼 (2x2 그리드) / Transform buttons (2x2 grid) -->
+                    <UniformGrid Columns="2" Rows="2" Margin="0,2">
+                        <controls:IconButton
+                            Icon="&#xE80C;"
+                            IconSize="14"
+                            Command="{Binding RotateLeftCommand}"
+                            ToolTip="Rotate Left 90°"
+                            Margin="1" />
+                        <controls:IconButton
+                            Icon="&#xE80D;"
+                            IconSize="14"
+                            Command="{Binding RotateRightCommand}"
+                            ToolTip="Rotate Right 90°"
+                            Margin="1" />
+                        <controls:IconButton
+                            Icon="&#xE8B7;"
+                            IconSize="14"
+                            Command="{Binding ToggleFlipHorizontalCommand}"
+                            ToolTip="Flip Horizontal"
+                            Margin="1" />
+                        <controls:IconButton
+                            Icon="&#xE700;"
+                            IconSize="14"
+                            Command="{Binding ToggleFlipVerticalCommand}"
+                            ToolTip="Flip Vertical"
+                            Margin="1" />
+                    </UniformGrid>
+
+                    <Separator Background="{StaticResource BorderSubtleBrush}"
+                               Margin="2,6" />
 
                     <!-- 액션 버튼 / Action buttons -->
-                    <TextBlock Text="ACTIONS"
-                               Foreground="{StaticResource ForegroundSubtleBrush}"
-                               FontSize="9"
-                               FontWeight="SemiBold"
-                               HorizontalAlignment="Center"
-                               Margin="0,0,0,8" />
-
-                    <!-- 리셋 / Reset -->
                     <controls:IconButton
                         Icon="&#xE72C;"
-                        Text="Reset"
-                        ShowText="True"
                         IconSize="16"
                         Command="{Binding ResetViewCommand}"
                         ToolTip="Reset all transformations"
-                        Margin="0,2" />
+                        Margin="0,1" />
 
-                    <!-- Zoom In -->
-                    <controls:IconButton
-                        Icon="&#xE8A3;"
-                        IconSize="16"
-                        Command="{Binding ZoomInCommand}"
-                        ToolTip="Zoom In"
-                        Margin="0,2" />
+                    <!-- Zoom 버튼 (1x2 그리드) / Zoom buttons (1x2 grid) -->
+                    <UniformGrid Columns="2" Margin="0,2">
+                        <controls:IconButton
+                            Icon="&#xE8A3;"
+                            IconSize="14"
+                            Command="{Binding ZoomInCommand}"
+                            ToolTip="Zoom In"
+                            Margin="1" />
+                        <controls:IconButton
+                            Icon="&#xE71F;"
+                            IconSize="14"
+                            Command="{Binding ZoomOutCommand}"
+                            ToolTip="Zoom Out"
+                            Margin="1" />
+                    </UniformGrid>
 
-                    <!-- Zoom Out -->
-                    <controls:IconButton
-                        Icon="&#xE71F;"
+                    <!-- Histogram Toggle -->
+                    <controls:IconToggleButton
+                        Icon="&#xE9D9;"
                         IconSize="16"
-                        Command="{Binding ZoomOutCommand}"
-                        ToolTip="Zoom Out"
-                        Margin="0,2" />
+                        IsChecked="{Binding ShowHistogram}"
+                        Command="{Binding ToggleHistogramCommand}"
+                        Margin="0,1">
+                        <controls:IconToggleButton.ToolTip>
+                            <ToolTip>
+                                <StackPanel MaxWidth="200">
+                                    <TextBlock Text="히스토그램 표시/숨김" FontWeight="SemiBold" />
+                                    <TextBlock TextWrapping="Wrap" Margin="0,4,0,0"
+                                               Text="히스토그램은 이미지의 밝기 분포를 보여줍니다." />
+                                    <TextBlock TextWrapping="Wrap" Margin="0,4,0,0"
+                                               Text="노란색 영역은 현재 Window/Level 범위입니다." />
+                                    <TextBlock TextWrapping="Wrap" Margin="0,4,0,0"
+                                               Foreground="Gray" FontSize="10"
+                                               Text="W/L 조정 시 노란 영역이 이동하며, 해당 범위의 밝기만 화면에 표시됩니다." />
+                                </StackPanel>
+                            </ToolTip>
+                        </controls:IconToggleButton.ToolTip>
+                    </controls:IconToggleButton>
 
                     <Separator Background="{StaticResource BorderSubtleBrush}"
-                               Margin="4,12" />
+                               Margin="2,6" />
 
-                    <!-- W/L 프리셋 / W/L Presets -->
-                    <TextBlock Text="PRESETS"
+                    <!-- W/L 프리셋 (CT용 밝기/대비 설정) / W/L Presets (CT brightness/contrast settings) -->
+                    <TextBlock Text="W/L"
                                Foreground="{StaticResource ForegroundSubtleBrush}"
                                FontSize="9"
                                FontWeight="SemiBold"
                                HorizontalAlignment="Center"
-                               Margin="0,0,0,8" />
+                               Margin="0,0,0,4" />
 
-                    <!-- CT Abdomen -->
+                    <!-- 기본값 프리셋 / Default preset -->
                     <controls:IconButton
-                        Icon="&#xEBD2;"
-                        Text="Abd"
-                        ShowText="True"
+                        Icon="&#xE777;"
                         IconSize="14"
+                        Foreground="{StaticResource AccentBrush}"
                         Command="{Binding ApplyWindowLevelPresetCommand}"
-                        CommandParameter="Abdomen"
-                        ToolTip="CT Abdomen (W:400 L:40)"
-                        Margin="0,2" />
+                        CommandParameter="Default"
+                        Margin="0,1">
+                        <controls:IconButton.ToolTip>
+                            <ToolTip>
+                                <StackPanel>
+                                    <TextBlock Text="기본값" FontWeight="SemiBold" />
+                                    <TextBlock Text="Window/Level 초기화 (W:400 L:40)" Foreground="Gray" />
+                                </StackPanel>
+                            </ToolTip>
+                        </controls:IconButton.ToolTip>
+                    </controls:IconButton>
 
-                    <!-- CT Lung -->
-                    <controls:IconButton
-                        Icon="&#xE95E;"
-                        Text="Lung"
-                        ShowText="True"
-                        IconSize="14"
-                        Command="{Binding ApplyWindowLevelPresetCommand}"
-                        CommandParameter="Lung"
-                        ToolTip="CT Lung (W:1500 L:-600)"
-                        Margin="0,2" />
-
-                    <!-- CT Bone -->
-                    <controls:IconButton
-                        Icon="&#xE9D9;"
-                        Text="Bone"
-                        ShowText="True"
-                        IconSize="14"
-                        Command="{Binding ApplyWindowLevelPresetCommand}"
-                        CommandParameter="Bone"
-                        ToolTip="CT Bone (W:2000 L:400)"
-                        Margin="0,2" />
-
-                    <!-- CT Brain -->
-                    <controls:IconButton
-                        Icon="&#xE94E;"
-                        Text="Brain"
-                        ShowText="True"
-                        IconSize="14"
-                        Command="{Binding ApplyWindowLevelPresetCommand}"
-                        CommandParameter="Brain"
-                        ToolTip="CT Brain (W:80 L:40)"
-                        Margin="0,2" />
+                    <!-- 프리셋 버튼 (2x2 그리드) / Preset buttons (2x2 grid) -->
+                    <UniformGrid Columns="2" Rows="2" Margin="0,2">
+                        <controls:IconButton
+                            Icon="&#xEBD2;"
+                            IconSize="12"
+                            Command="{Binding ApplyWindowLevelPresetCommand}"
+                            CommandParameter="Abdomen"
+                            Margin="1">
+                            <controls:IconButton.ToolTip>
+                                <ToolTip>
+                                    <StackPanel>
+                                        <TextBlock Text="복부 (Abdomen)" FontWeight="SemiBold" />
+                                        <TextBlock Text="간, 신장 등 복부 장기용" />
+                                        <TextBlock Text="W:400 L:40" Foreground="Gray" />
+                                    </StackPanel>
+                                </ToolTip>
+                            </controls:IconButton.ToolTip>
+                        </controls:IconButton>
+                        <controls:IconButton
+                            Icon="&#xE95E;"
+                            IconSize="12"
+                            Command="{Binding ApplyWindowLevelPresetCommand}"
+                            CommandParameter="Lung"
+                            Margin="1">
+                            <controls:IconButton.ToolTip>
+                                <ToolTip>
+                                    <StackPanel>
+                                        <TextBlock Text="폐 (Lung)" FontWeight="SemiBold" />
+                                        <TextBlock Text="공기가 찬 폐 조직용" />
+                                        <TextBlock Text="W:1500 L:-600" Foreground="Gray" />
+                                    </StackPanel>
+                                </ToolTip>
+                            </controls:IconButton.ToolTip>
+                        </controls:IconButton>
+                        <controls:IconButton
+                            Icon="&#xE9D9;"
+                            IconSize="12"
+                            Command="{Binding ApplyWindowLevelPresetCommand}"
+                            CommandParameter="Bone"
+                            Margin="1">
+                            <controls:IconButton.ToolTip>
+                                <ToolTip>
+                                    <StackPanel>
+                                        <TextBlock Text="뼈 (Bone)" FontWeight="SemiBold" />
+                                        <TextBlock Text="골격, 석회화 구조용" />
+                                        <TextBlock Text="W:2000 L:400" Foreground="Gray" />
+                                    </StackPanel>
+                                </ToolTip>
+                            </controls:IconButton.ToolTip>
+                        </controls:IconButton>
+                        <controls:IconButton
+                            Icon="&#xE94E;"
+                            IconSize="12"
+                            Command="{Binding ApplyWindowLevelPresetCommand}"
+                            CommandParameter="Brain"
+                            Margin="1">
+                            <controls:IconButton.ToolTip>
+                                <ToolTip>
+                                    <StackPanel>
+                                        <TextBlock Text="뇌 (Brain)" FontWeight="SemiBold" />
+                                        <TextBlock Text="뇌 연조직 대비용" />
+                                        <TextBlock Text="W:80 L:40" Foreground="Gray" />
+                                    </StackPanel>
+                                </ToolTip>
+                            </controls:IconButton.ToolTip>
+                        </controls:IconButton>
+                    </UniformGrid>
                 </StackPanel>
             </ScrollViewer>
         </Border>

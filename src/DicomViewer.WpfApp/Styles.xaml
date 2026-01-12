@@ -6,6 +6,8 @@
     <converters:ByteArrayToBitmapConverter x:Key="ByteArrayToBitmapConverter" />
     <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" />
     <converters:ToolEnumConverter x:Key="ToolEnumConverter" />
+    <converters:ToolVisibilityConverter x:Key="ToolVisibilityConverter" />
+    <BooleanToVisibilityConverter x:Key="BoolToVisConverter" />
 
     <!-- ===== Windows 11 스타일 색상 팔레트 / Windows 11 Style Color Palette ===== -->
 

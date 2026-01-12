@@ -1,3 +1,7 @@
+global using System.Buffers;
+global using System.Numerics;
+global using System.Runtime.CompilerServices;
+global using System.Runtime.InteropServices;
 global using DicomViewer.Application.DTOs;
 global using DicomViewer.Application.Interfaces;
 global using DicomViewer.Domain.ValueObjects;

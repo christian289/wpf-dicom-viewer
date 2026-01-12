@@ -39,4 +39,10 @@ public interface IDicomImageService
     /// Check if file is a valid DICOM image (contains pixel data)
     /// </summary>
     bool IsValidDicomImage(string filePath);
+
+    /// <summary>
+    /// DICOM 이미지의 PixelSpacing 값 가져오기 (mm 단위)
+    /// Get PixelSpacing values from DICOM image (in mm)
+    /// </summary>
+    PixelSpacing GetPixelSpacing(string filePath);
 }
