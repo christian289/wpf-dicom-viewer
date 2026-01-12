@@ -35,7 +35,9 @@
       "Bash(git -C \"D:\\\\Github\\\\wpf-dicom-viewer\" push)",
       "Bash(git -C \"D:\\\\Github\\\\wpf-dicom-viewer\" commit -m \"$\\(cat <<''EOF''\nfeat: WPF 에러 해결 패턴 Skill 추가\n\n이 세션에서 발생했던 WPF 에러들을 Skill로 문서화\n\n## 추가된 Skills\n- wpf-icon-font-inheritance: CustomControl에서 Segoe Fluent Icons 사용 시 텍스트 폰트 상속 문제 해결\n- wpf-command-parameter-enum: CommandParameter에 enum 값 바인딩 시 x:Static 사용 패턴\n- wpf-slider-index-display: Slider에서 0-based 인덱스를 1-based로 표시하는 패턴\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
       "WebFetch(domain:www.osirix-viewer.com)",
-      "Bash(xargs cat:*)"
+      "Bash(xargs cat:*)",
+      "Bash(git commit:*)",
+      "Bash(ls:*)"
     ]
   }
 }
