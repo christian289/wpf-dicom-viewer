@@ -1,6 +1,6 @@
 ---
-name: wpf-visual-logical-tree
-description: WPF Visual Tree와 Logical Tree 차이점 및 활용법. VisualTreeHelper, LogicalTreeHelper 사용 패턴. 요소 탐색, 템플릿 내 요소 접근, 이벤트 라우팅 이해 시 이 스킬 적용.
+name: navigating-visual-logical-tree
+description: Navigates WPF Visual Tree and Logical Tree with VisualTreeHelper and LogicalTreeHelper patterns. Use when traversing elements, accessing template internals, or understanding event routing.
 ---
 
 # WPF Visual Tree & Logical Tree Patterns

@@ -1,6 +1,6 @@
 ---
-name: wpf-media-integration
-description: WPF 미디어 통합. MediaElement 비디오/오디오 재생, Image 컨트롤 이미지 표시, SoundPlayerAction 사운드 효과. 미디어 플레이어, 갤러리, 멀티미디어 UI 구현 시 이 스킬 적용.
+name: integrating-wpf-media
+description: Integrates multimedia content in WPF including MediaElement video/audio playback, Image control display, and SoundPlayerAction effects. Use when building media players, galleries, or multimedia UIs.
 ---
 
 # WPF Media Integration Patterns

@@ -1,6 +1,6 @@
 ---
-name: wpf-drawingvisual
-description: WPF DrawingVisual을 사용한 경량 렌더링. ContainerVisual, VisualCollection, DrawingContext 활용. 대량 그래픽 요소, 차트, 게임 그래픽, 커스텀 렌더링 구현 시 이 스킬 적용.
+name: rendering-with-drawingvisual
+description: Implements lightweight rendering using WPF DrawingVisual with ContainerVisual, VisualCollection, and DrawingContext. Use when rendering large-scale graphics, charts, game graphics, or custom visuals.
 ---
 
 # WPF DrawingVisual Patterns

@@ -1,6 +1,6 @@
 ---
-name: wpf-adorner
-description: WPF Adorner를 사용한 장식 레이어 구현. AdornerLayer, AdornerDecorator, 커스텀 Adorner 패턴. 드래그 핸들, 유효성 검사 표시, 워터마크, 선택 표시, 리사이즈 그립 구현 시 이 스킬 적용.
+name: implementing-wpf-adorners
+description: Implements WPF Adorner decoration layers with AdornerLayer, AdornerDecorator, and custom Adorner patterns. Use when building drag handles, validation indicators, watermarks, selection visuals, or resize grips.
 ---
 
 # WPF Adorner Patterns
