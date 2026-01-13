@@ -3,7 +3,7 @@ name: dotnet-parallel-lite
 description: '병렬 처리 핵심 패턴'
 ---
 
-# 병렬 처리 핵심
+# Parallel Processing Essentials
 
 ## 1. Parallel.ForEach
 
@@ -29,10 +29,10 @@ var results = data
     .ToList();
 ```
 
-## 3. Thread-Safe 컬렉션
+## 3. Thread-Safe Collections
 
 ```csharp
-// 병렬 처리 중 결과 수집
+// Collecting results during parallel processing
 var results = new ConcurrentBag<Result>();
 
 Parallel.ForEach(data, item =>
@@ -41,17 +41,17 @@ Parallel.ForEach(data, item =>
 });
 ```
 
-## 4. 주의사항
+## 4. Important Notes
 
-- ⚠️ CPU 바운드: Parallel 사용
-- ⚠️ I/O 바운드: async-await 사용
+- CPU-bound: Use Parallel
+- I/O-bound: Use async-await
 
 ```csharp
-// ❌ I/O에 Parallel 사용
+// ❌ Using Parallel for I/O
 Parallel.ForEach(urls, url => httpClient.GetAsync(url).Result);
 
-// ✅ I/O에 async-await 사용
+// ✅ Using async-await for I/O
 await Task.WhenAll(urls.Select(url => httpClient.GetAsync(url)));
 ```
 
-> 상세 내용: `/dotnet-parallel` skill 참조
+> For details: See `/dotnet-parallel` skill

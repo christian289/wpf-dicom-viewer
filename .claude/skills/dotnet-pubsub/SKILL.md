@@ -3,23 +3,23 @@ name: dotnet-pubsub
 description: '.NET Pub-Sub 패턴 (System.Reactive, Channels)'
 ---
 
-# .NET Pub-Sub 패턴
+# .NET Pub-Sub Pattern
 
-이벤트 기반 비동기 통신을 위한 Pub-Sub 패턴 가이드입니다.
+A guide for Pub-Sub patterns for event-based asynchronous communication.
 
-## 1. 핵심 API
+## 1. Core APIs
 
-| API | 용도 | NuGet |
-|-----|------|-------|
-| `System.Reactive` (Rx.NET) | 반응형 이벤트 스트림 | System.Reactive |
-| `System.Threading.Channels` | 비동기 Producer-Consumer | BCL |
-| `IObservable<T>` | 관찰 가능한 시퀀스 | BCL |
+| API | Purpose | NuGet |
+|-----|---------|-------|
+| `System.Reactive` (Rx.NET) | Reactive event streams | System.Reactive |
+| `System.Threading.Channels` | Async Producer-Consumer | BCL |
+| `IObservable<T>` | Observable sequence | BCL |
 
 ---
 
 ## 2. System.Threading.Channels
 
-### 2.1 기본 사용법
+### 2.1 Basic Usage
 
 ```csharp
 using System.Threading.Channels;
@@ -29,13 +29,13 @@ public sealed class MessageProcessor
     private readonly Channel<Message> _channel =
         Channel.CreateUnbounded<Message>();
 
-    // Producer - 메시지 전송
+    // Producer - Send message
     public async Task SendAsync(Message message)
     {
         await _channel.Writer.WriteAsync(message);
     }
 
-    // Consumer - 메시지 처리
+    // Consumer - Process message
     public async Task ProcessAsync(CancellationToken ct)
     {
         await foreach (var message in _channel.Reader.ReadAllAsync(ct))
@@ -44,29 +44,29 @@ public sealed class MessageProcessor
         }
     }
 
-    // 채널 완료 신호
+    // Channel completion signal
     public void Complete() => _channel.Writer.Complete();
 }
 ```
 
-### 2.2 Bounded Channel (배압 제어)
+### 2.2 Bounded Channel (Backpressure Control)
 
 ```csharp
-// 버퍼 크기 제한으로 배압 제어
+// Backpressure control with buffer size limit
 var options = new BoundedChannelOptions(capacity: 100)
 {
-    FullMode = BoundedChannelFullMode.Wait, // 가득 차면 대기
+    FullMode = BoundedChannelFullMode.Wait, // Wait when full
     SingleReader = true,
     SingleWriter = false
 };
 
 var channel = Channel.CreateBounded<Message>(options);
 
-// Writer는 공간이 생길 때까지 대기
+// Writer waits until space is available
 await channel.Writer.WriteAsync(message);
 ```
 
-### 2.3 다중 Consumer 패턴
+### 2.3 Multiple Consumer Pattern
 
 ```csharp
 public sealed class WorkerPool
@@ -105,7 +105,7 @@ public sealed class WorkerPool
 
 ## 3. System.Reactive (Rx.NET)
 
-### 3.1 EventAggregator 패턴
+### 3.1 EventAggregator Pattern
 
 ```csharp
 using System.Reactive.Linq;
@@ -115,11 +115,11 @@ public sealed class EventAggregator : IDisposable
 {
     private readonly Subject<object> _subject = new();
 
-    // 특정 타입 이벤트 구독
+    // Subscribe to specific event type
     public IObservable<T> GetEvent<T>() =>
         _subject.OfType<T>().AsObservable();
 
-    // 이벤트 발행
+    // Publish event
     public void Publish<T>(T @event) =>
         _subject.OnNext(@event!);
 
@@ -127,14 +127,14 @@ public sealed class EventAggregator : IDisposable
 }
 ```
 
-### 3.2 사용 예시
+### 3.2 Usage Example
 
 ```csharp
-// 이벤트 정의
+// Event definitions
 public record UserLoggedIn(string UserId);
 public record OrderPlaced(int OrderId);
 
-// 구독
+// Subscription
 var aggregator = new EventAggregator();
 
 aggregator.GetEvent<UserLoggedIn>()
@@ -144,26 +144,26 @@ aggregator.GetEvent<OrderPlaced>()
     .Where(e => e.OrderId > 100)
     .Subscribe(e => Console.WriteLine($"Large order: {e.OrderId}"));
 
-// 발행
+// Publish
 aggregator.Publish(new UserLoggedIn("user123"));
 aggregator.Publish(new OrderPlaced(150));
 ```
 
-### 3.3 Rx 연산자
+### 3.3 Rx Operators
 
 ```csharp
-// 디바운스 - 연속 이벤트 중 마지막만 처리
+// Debounce - Process only the last event in a sequence
 searchInput
     .Throttle(TimeSpan.FromMilliseconds(300))
     .DistinctUntilChanged()
     .Subscribe(query => Search(query));
 
-// 버퍼 - 일정 기간 이벤트 모아서 처리
+// Buffer - Collect events for a period and process as batch
 events
     .Buffer(TimeSpan.FromSeconds(5))
     .Subscribe(batch => ProcessBatch(batch));
 
-// 재시도 - 실패 시 재시도
+// Retry - Retry on failure
 observable
     .Retry(3)
     .Subscribe(
@@ -174,19 +174,19 @@ observable
 
 ---
 
-## 4. 비교: Channels vs Rx
+## 4. Comparison: Channels vs Rx
 
-| 특성 | Channels | Rx.NET |
-|------|----------|--------|
-| 용도 | Producer-Consumer | 이벤트 스트림 |
-| 배압 제어 | 내장 (Bounded) | 별도 구현 |
-| 연산자 | 기본적 | 풍부함 |
-| 학습 곡선 | 낮음 | 높음 |
-| 의존성 | BCL | NuGet |
+| Feature | Channels | Rx.NET |
+|---------|----------|--------|
+| Purpose | Producer-Consumer | Event streams |
+| Backpressure | Built-in (Bounded) | Separate implementation |
+| Operators | Basic | Rich |
+| Learning curve | Low | High |
+| Dependency | BCL | NuGet |
 
 ---
 
-## 5. DI 통합
+## 5. DI Integration
 
 ```csharp
 // Program.cs
@@ -215,7 +215,7 @@ public sealed class Consumer(ChannelReader<Message> reader)
 
 ---
 
-## 6. 필수 NuGet 패키지
+## 6. Required NuGet Package
 
 ```xml
 <ItemGroup>
@@ -225,36 +225,36 @@ public sealed class Consumer(ChannelReader<Message> reader)
 
 ---
 
-## 7. 주의사항
+## 7. Important Notes
 
-### ⚠️ 메모리 누수
+### Memory Leaks
 
 ```csharp
-// 구독 해제 필수
+// Subscription disposal is required
 var subscription = observable.Subscribe(handler);
 
-// 사용 완료 후
+// After use
 subscription.Dispose();
 ```
 
-### ⚠️ 스레드 안전성
+### Thread Safety
 
-- Channels는 기본적으로 스레드 안전
-- Subject는 스레드 안전하지 않음 (필요시 Synchronize() 사용)
+- Channels are thread-safe by default
+- Subject is not thread-safe (use Synchronize() if needed)
 
-### ⚠️ 배압 처리
+### Backpressure Handling
 
 ```csharp
-// Bounded Channel로 메모리 폭발 방지
+// Prevent memory explosion with Bounded Channel
 var channel = Channel.CreateBounded<Message>(new BoundedChannelOptions(1000)
 {
-    FullMode = BoundedChannelFullMode.DropOldest // 오래된 메시지 버림
+    FullMode = BoundedChannelFullMode.DropOldest // Drop old messages
 });
 ```
 
 ---
 
-## 8. 참고 문서
+## 8. References
 
 - [Channels](https://learn.microsoft.com/en-us/dotnet/core/extensions/channels)
 - [System.Reactive](https://github.com/dotnet/reactive)

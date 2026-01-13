@@ -3,13 +3,13 @@ name: wpf-customcontrol-architecture-design-basic
 description: 'WPF CustomControl과 ResourceDictionary를 통한 Stand-Alone Control Style 작성'
 ---
 
-# XAML 코드 작성 - WPF CustomControl
+# XAML Code Writing - WPF CustomControl
 
-WPF에서 XAML 코드 작성 시 CustomControl과 ResourceDictionary 사용 가이드입니다.
+A guide for using CustomControl and ResourceDictionary when writing XAML code in WPF.
 
-## 프로젝트 구조
+## Project Structure
 
-templates 폴더에 .NET 9 WPF 프로젝트 예제가 포함되어 있습니다.
+The templates folder contains a .NET 9 WPF project example.
 
 ```
 templates/
@@ -17,8 +17,8 @@ templates/
 │   ├── Properties/
 │   │   └── AssemblyInfo.cs
 │   ├── Themes/
-│   │   ├── Generic.xaml                    ← MergedDictionaries 허브
-│   │   └── CustomButton.xaml               ← 개별 컨트롤 스타일
+│   │   ├── Generic.xaml                    ← MergedDictionaries hub
+│   │   └── CustomButton.xaml               ← Individual control style
 │   ├── CustomButton.cs
 │   ├── GlobalUsings.cs
 │   └── WpfCustomControlSample.Controls.csproj
@@ -32,15 +32,15 @@ templates/
     └── WpfCustomControlSample.App.csproj
 ```
 
-## 기본 원칙
+## Basic Principles
 
-**XAML 코드를 생성할 때는 CustomControl을 사용하여 ResourceDictionary를 통한 Stand-Alone Control Style Resource를 사용**
+**When generating XAML code, use CustomControl with Stand-Alone Control Style Resource through ResourceDictionary**
 
-**목적**: StaticResource 불러올 때 시점 고정 및 스타일 의존성 최소화
+**Purpose**: Fix the timing of StaticResource loading and minimize style dependencies
 
-## WPF Custom Control Library 프로젝트 구조
+## WPF Custom Control Library Project Structure
 
-### 프로젝트 생성 시 기본 구조
+### Default Structure When Creating Project
 
 ```
 YourProject/
@@ -51,31 +51,31 @@ YourProject/
 └── CustomControl1.cs
 ```
 
-### 권장 프로젝트 구조로 재구성
+### Restructure to Recommended Project Structure
 
 ```
 YourProject/
 ├── Dependencies/
 ├── Properties/
-│   └── AssemblyInfo.cs          ← 이동
+│   └── AssemblyInfo.cs          ← Moved
 ├── Themes/
-│   ├── Generic.xaml             ← MergedDictionaries 허브로 사용
-│   ├── CustomButton.xaml        ← 개별 컨트롤 스타일
-│   └── CustomTextBox.xaml       ← 개별 컨트롤 스타일
+│   ├── Generic.xaml             ← Use as MergedDictionaries hub
+│   ├── CustomButton.xaml        ← Individual control style
+│   └── CustomTextBox.xaml       ← Individual control style
 ├── CustomButton.cs
 └── CustomTextBox.cs
 ```
 
-## 단계별 설정
+## Step-by-Step Setup
 
-### 1. Properties 폴더 생성 및 AssemblyInfo.cs 이동
+### 1. Create Properties Folder and Move AssemblyInfo.cs
 
-- 프로젝트에 Properties 폴더 생성
-- AssemblyInfo.cs를 Properties 폴더로 이동
+- Create Properties folder in the project
+- Move AssemblyInfo.cs to the Properties folder
 
-### 2. Generic.xaml 구성 - MergedDictionaries 허브로 사용
+### 2. Configure Generic.xaml - Use as MergedDictionaries Hub
 
-Generic.xaml은 직접 스타일을 정의하지 않고, 개별 ResourceDictionary들을 병합하는 역할만 수행:
+Generic.xaml does not define styles directly; it only performs the role of merging individual ResourceDictionaries:
 
 ```xml
 <!-- Themes/Generic.xaml -->
@@ -87,9 +87,9 @@ Generic.xaml은 직접 스타일을 정의하지 않고, 개별 ResourceDictiona
 </ResourceDictionary>
 ```
 
-### 3. 개별 컨트롤 스타일 정의
+### 3. Define Individual Control Styles
 
-각 컨트롤마다 독립적인 XAML 파일에 스타일 정의:
+Define styles in independent XAML files for each control:
 
 ```xml
 <!-- Themes/CustomButton.xaml -->
@@ -97,12 +97,12 @@ Generic.xaml은 직접 스타일을 정의하지 않고, 개별 ResourceDictiona
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:local="clr-namespace:YourNamespace">
 
-    <!-- 컨트롤 전용 리소스 정의 -->
+    <!-- Control-specific resource definitions -->
     <SolidColorBrush x:Key="ButtonBackground" Color="#FF2D5460" />
     <SolidColorBrush x:Key="ButtonBackground_MouseOver" Color="#FF1D5460" />
     <SolidColorBrush x:Key="ButtonForeground" Color="#FFFFFFFF" />
 
-    <!-- 컨트롤 스타일 정의 -->
+    <!-- Control style definition -->
     <Style TargetType="{x:Type local:CustomButton}">
         <Setter Property="Background" Value="{StaticResource ButtonBackground}" />
         <Setter Property="Foreground" Value="{StaticResource ButtonForeground}" />
@@ -128,9 +128,9 @@ Generic.xaml은 직접 스타일을 정의하지 않고, 개별 ResourceDictiona
 </ResourceDictionary>
 ```
 
-## 실제 프로젝트 예시
+## Real Project Example
 
-### Generic.xaml 예시
+### Generic.xaml Example
 
 ```xml
 <!-- Themes/Generic.xaml -->
@@ -141,7 +141,7 @@ Generic.xaml은 직접 스타일을 정의하지 않고, 개별 ResourceDictiona
 </ResourceDictionary>
 ```
 
-### 개별 컨트롤 스타일 예시
+### Individual Control Style Example
 
 ```xml
 <!-- Themes/GdtBranchSelectionPopup.xaml -->
@@ -168,7 +168,7 @@ Generic.xaml은 직접 스타일을 정의하지 않고, 개별 ResourceDictiona
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}">
                         <Grid>
-                            <!-- 컨트롤 내용 -->
+                            <!-- Control content -->
                         </Grid>
                     </Border>
                 </ControlTemplate>
@@ -178,9 +178,10 @@ Generic.xaml은 직접 스타일을 정의하지 않고, 개별 ResourceDictiona
 </ResourceDictionary>
 ```
 
-## 장점
+## Advantages
 
-- 각 컨트롤의 스타일이 독립적인 파일로 분리되어 관리 용이
-- Generic.xaml은 단순히 병합 역할만 수행하여 구조가 명확함
-- StaticResource 참조 시점이 명확하고 의존성 최소화
-- 팀 작업 시 파일 단위로 작업 분리 가능
+- Each control's style is separated into independent files for easier management
+- Generic.xaml simply performs a merging role, making the structure clear
+- StaticResource reference timing is clear and dependencies are minimized
+- Work can be split by file for team collaboration
+

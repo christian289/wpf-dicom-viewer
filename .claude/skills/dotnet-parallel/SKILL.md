@@ -3,22 +3,22 @@ name: dotnet-parallel
 description: '.NET 병렬 처리 패턴 (Parallel, PLINQ, ConcurrentCollections)'
 ---
 
-# .NET 병렬 처리
+# .NET Parallel Processing
 
-CPU 바운드 작업의 병렬 처리를 위한 API 및 패턴 가이드입니다.
+A guide for APIs and patterns for parallel processing of CPU-bound tasks.
 
-## 1. 핵심 API
+## 1. Core APIs
 
-| API | 용도 |
-|-----|------|
-| `Parallel.For`, `Parallel.ForEach` | CPU 바운드 병렬 처리 |
-| `PLINQ (.AsParallel())` | LINQ 쿼리 병렬화 |
-| `Partitioner<T>` | 대용량 데이터 파티셔닝 |
-| `ConcurrentDictionary<K,V>` | Thread-safe 딕셔너리 |
+| API | Purpose |
+|-----|---------|
+| `Parallel.For`, `Parallel.ForEach` | CPU-bound parallel processing |
+| `PLINQ (.AsParallel())` | LINQ query parallelization |
+| `Partitioner<T>` | Large data partitioning |
+| `ConcurrentDictionary<K,V>` | Thread-safe dictionary |
 
 ---
 
-## 2. Parallel 클래스
+## 2. Parallel Class
 
 ### 2.1 Parallel.ForEach
 
@@ -40,7 +40,7 @@ public sealed class ImageProcessor
 }
 ```
 
-### 2.2 조기 중단
+### 2.2 Early Termination
 
 ```csharp
 Parallel.For(0, data.Length, (i, state) =>
@@ -64,7 +64,7 @@ var results = data
     .Select(d => Transform(d))
     .ToList();
 
-// 순서 유지 필요 시
+// When order preservation is needed
 var results = data
     .AsParallel()
     .AsOrdered()
@@ -74,16 +74,16 @@ var results = data
 
 ---
 
-## 4. Thread-Safe 컬렉션
+## 4. Thread-Safe Collections
 
-| 컬렉션 | 용도 |
-|--------|------|
-| `ConcurrentDictionary<K,V>` | Thread-safe 딕셔너리 |
-| `ConcurrentQueue<T>` | Thread-safe FIFO 큐 |
-| `ConcurrentBag<T>` | Thread-safe 순서 없는 컬렉션 |
+| Collection | Purpose |
+|------------|---------|
+| `ConcurrentDictionary<K,V>` | Thread-safe dictionary |
+| `ConcurrentQueue<T>` | Thread-safe FIFO queue |
+| `ConcurrentBag<T>` | Thread-safe unordered collection |
 
 ```csharp
-// 병렬 처리 중 결과 수집
+// Collecting results during parallel processing
 var results = new ConcurrentBag<Result>();
 
 Parallel.ForEach(data, item =>
@@ -97,7 +97,7 @@ Parallel.ForEach(data, item =>
 
 ## 5. ThreadLocal<T>
 
-스레드별 독립 변수로 경합 방지
+Prevents contention with thread-local variables
 
 ```csharp
 private readonly ThreadLocal<StringBuilder> _localBuilder =
@@ -116,36 +116,36 @@ public void ProcessInParallel()
 
 ---
 
-## 6. 주의사항
+## 6. Important Notes
 
-### ⚠️ 병렬 처리 vs 비동기
+### Parallel Processing vs Async
 
-- **CPU 바운드**: Parallel 사용
-- **I/O 바운드**: async-await 사용
+- **CPU-bound**: Use Parallel
+- **I/O-bound**: Use async-await
 
 ```csharp
-// ❌ I/O 작업에 Parallel 사용
+// ❌ Using Parallel for I/O operations
 Parallel.ForEach(urls, url => httpClient.GetAsync(url).Result);
 
-// ✅ I/O 작업에 async-await 사용
+// ✅ Using async-await for I/O operations
 await Task.WhenAll(urls.Select(url => httpClient.GetAsync(url)));
 ```
 
-### ⚠️ 공유 상태 동기화
+### Shared State Synchronization
 
 ```csharp
-// ❌ 일반 컬렉션에 병렬 쓰기
+// ❌ Parallel writes to regular collection
 var list = new List<int>();
 Parallel.For(0, 1000, i => list.Add(i)); // Race condition!
 
-// ✅ Thread-safe 컬렉션 사용
+// ✅ Using thread-safe collection
 var bag = new ConcurrentBag<int>();
 Parallel.For(0, 1000, i => bag.Add(i));
 ```
 
 ---
 
-## 7. 참고 문서
+## 7. References
 
 - [Parallel Class](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.parallel)
 - [PLINQ](https://learn.microsoft.com/en-us/dotnet/standard/parallel-programming/introduction-to-plinq)

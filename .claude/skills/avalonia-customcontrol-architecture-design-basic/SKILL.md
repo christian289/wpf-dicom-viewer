@@ -3,57 +3,58 @@ name: avalonia-customcontrol-architecture-design-basic
 description: 'AvaloniaUI CustomControl를 활용한 AvaloniaUI Desktop Application Solution 기본 구조'
 ---
 
-# 6.5 AXAML 코드 작성
+# 6.5 Writing AXAML Code
 
-- **AXAML 코드를 생성할 때는 CustomControl을 사용하여 ControlTheme을 통한 Stand-Alone Control Style 사용**
-- 목적: 테마 분리 및 스타일 의존성 최소화
+- **When generating AXAML code, use CustomControl with ControlTheme for Stand-Alone Control Style**
+- Purpose: Theme separation and minimizing style dependencies
 
-#### 6.5.1 AvaloniaUI Custom Control Library 프로젝트 구조
+#### 6.5.1 AvaloniaUI Custom Control Library Project Structure
 
-**권장 프로젝트 구조:**
+**Recommended Project Structure:**
 
 ```
 YourAvaloniaSolution
 ├── YourCustomControlProject1/
 │    ├── Properties/
-│    │   ├── AssemblyInfo.cs            ← AssemblyInfo.cs 정의
+│    │   ├── AssemblyInfo.cs            ← AssemblyInfo.cs definition
 │    ├── Themes/
-│    │   ├── Generic.axaml            ← ControlTheme 정의
-│    │   ├── CustomButton1.axaml       ← 개별 컨트롤 테마
-│    │   └── CustomTextBox1.axaml      ← 개별 컨트롤 테마
+│    │   ├── Generic.axaml            ← ControlTheme definition
+│    │   ├── CustomButton1.axaml       ← Individual control theme
+│    │   └── CustomTextBox1.axaml      ← Individual control theme
 │    ├── CustomButton1.cs
 │    └── CustomTextBox1.cs
 └── YourCustomControlProject2/
     ├── Properties/
-    │   ├── AssemblyInfo.cs            ← AssemblyInfo.cs 정의
+    │   ├── AssemblyInfo.cs            ← AssemblyInfo.cs definition
     ├── Themes/
-    │   ├── Generic.axaml            ← ControlTheme 정의
-    │   ├── CustomButton2.axaml       ← 개별 컨트롤 테마
-    │   └── CustomTextBox2.axaml      ← 개별 컨트롤 테마
+    │   ├── Generic.axaml            ← ControlTheme definition
+    │   ├── CustomButton2.axaml       ← Individual control theme
+    │   └── CustomTextBox2.axaml      ← Individual control theme
     ├── CustomButton2.cs
     └── CustomTextBox2.cs
 ```
 
-# 6.6 ⚠️ ResourceInclude vs MergeResourceInclude 구분
+# 6.6 ⚠️ Distinguishing ResourceInclude vs MergeResourceInclude
 
-- **ResourceInclude**: 일반 ResourceDictionary 파일 (Generic.axaml, Styles 등)에서 사용
-- **MergeResourceInclude**: Application.Resources (App.axaml)에서만 사용
+- **ResourceInclude**: Used in regular ResourceDictionary files (Generic.axaml, Styles, etc.)
+- **MergeResourceInclude**: Used only in Application.Resources (App.axaml)
 
-**장점:**
+**Advantages:**
 
-- ControlTheme 기반으로 테마와 로직 완전 분리
-- CSS Class를 통한 유연한 스타일 변형
-- Pseudo Classes (:pointerover, :pressed 등)를 통한 상태 관리
-- ResourceInclude를 통한 테마 모듈화
-- 팀 작업 시 파일 단위로 작업 분리 가능
+- Complete separation of theme and logic based on ControlTheme
+- Flexible style variations through CSS Classes
+- State management via Pseudo Classes (:pointerover, :pressed, etc.)
+- Theme modularization through ResourceInclude
+- Work can be split by file for team collaboration
 
-#### 6.5.2 WPF vs AvaloniaUI 주요 차이점
+#### 6.5.2 Key Differences Between WPF and AvaloniaUI
 
-| 항목        | WPF                                     | AvaloniaUI                           |
-| ----------- | --------------------------------------- | ------------------------------------ |
-| 파일 확장자 | .xaml                                   | .axaml                               |
-| 스타일 정의 | Style + ControlTemplate                 | ControlTheme                         |
-| 상태 관리   | Trigger, DataTrigger                    | Pseudo Classes, Style Selector       |
-| CSS 지원    | ❌                                      | ✅ (Classes 속성)                    |
-| 리소스 병합 | MergedDictionaries + ResourceDictionary | MergedDictionaries + ResourceInclude |
-| 의존성 속성 | DependencyProperty                      | StyledProperty, DirectProperty       |
+| Item              | WPF                                     | AvaloniaUI                           |
+| ----------------- | --------------------------------------- | ------------------------------------ |
+| File Extension    | .xaml                                   | .axaml                               |
+| Style Definition  | Style + ControlTemplate                 | ControlTheme                         |
+| State Management  | Trigger, DataTrigger                    | Pseudo Classes, Style Selector       |
+| CSS Support       | ❌                                      | ✅ (Classes attribute)               |
+| Resource Merging  | MergedDictionaries + ResourceDictionary | MergedDictionaries + ResourceInclude |
+| Dependency Props  | DependencyProperty                      | StyledProperty, DirectProperty       |
+

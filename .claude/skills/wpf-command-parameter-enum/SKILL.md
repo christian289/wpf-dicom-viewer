@@ -3,43 +3,43 @@ name: wpf-command-parameter-enum
 description: 'WPF CommandParameter에 enum 값 바인딩 시 x:Static 사용 패턴'
 ---
 
-# WPF Command Parameter Enum 타입 바인딩
+# WPF Command Parameter Enum Type Binding
 
-## 문제 상황
+## Problem Scenario
 
-WPF에서 `CommandParameter`에 enum 값을 바인딩할 때, **문자열로 전달하면 타입 불일치 오류**가 발생합니다.
+When binding enum values to `CommandParameter` in WPF, **passing as string causes type mismatch error**.
 
-### 에러 메시지
+### Error Message
 ```
 System.ArgumentException: 'Parameter "parameter" (object) cannot be of type System.String,
 as the command type requires an argument of type MyNamespace.MyEnum.'
 ```
 
-### 원인
-XAML에서 `CommandParameter="Pan"`처럼 문자열로 지정하면, WPF는 이를 `System.String` 타입으로 전달합니다. 그러나 Command가 특정 enum 타입을 기대하는 경우 타입 변환이 자동으로 이루어지지 않습니다.
+### Cause
+When specifying `CommandParameter="Pan"` as a string in XAML, WPF passes it as `System.String` type. However, if the Command expects a specific enum type, automatic type conversion does not occur.
 
 ---
 
-## 해결 방법
+## Solution
 
-### `x:Static`을 사용하여 enum 값 직접 참조
+### Use `x:Static` to Directly Reference Enum Value
 
 ```xml
-<!-- 네임스페이스 선언 -->
+<!-- Namespace declaration -->
 xmlns:viewmodels="clr-namespace:MyApp.ViewModels;assembly=MyApp.ViewModels"
 
-<!-- 잘못된 방법 (String으로 전달됨) -->
+<!-- Wrong method (passed as String) -->
 <Button Command="{Binding SelectToolCommand}"
         CommandParameter="Pan" />
 
-<!-- 올바른 방법 (Enum 타입으로 전달됨) -->
+<!-- Correct method (passed as Enum type) -->
 <Button Command="{Binding SelectToolCommand}"
         CommandParameter="{x:Static viewmodels:ViewerTool.Pan}" />
 ```
 
 ---
 
-## 전체 예시
+## Complete Example
 
 ### ViewModel (C#)
 ```csharp
@@ -69,7 +69,7 @@ public partial class ViewerViewModel : ObservableObject
 <UserControl xmlns:viewmodels="clr-namespace:MyApp.ViewModels;assembly=MyApp.ViewModels">
 
     <StackPanel Orientation="Horizontal">
-        <!-- Pan 도구 선택 -->
+        <!-- Select Pan tool -->
         <ToggleButton Content="Pan"
                       Command="{Binding SelectToolCommand}"
                       CommandParameter="{x:Static viewmodels:ViewerTool.Pan}"
@@ -77,7 +77,7 @@ public partial class ViewerViewModel : ObservableObject
                                  Converter={StaticResource EnumToBoolConverter},
                                  ConverterParameter={x:Static viewmodels:ViewerTool.Pan}}" />
 
-        <!-- Zoom 도구 선택 -->
+        <!-- Select Zoom tool -->
         <ToggleButton Content="Zoom"
                       Command="{Binding SelectToolCommand}"
                       CommandParameter="{x:Static viewmodels:ViewerTool.Zoom}"
@@ -85,7 +85,7 @@ public partial class ViewerViewModel : ObservableObject
                                  Converter={StaticResource EnumToBoolConverter},
                                  ConverterParameter={x:Static viewmodels:ViewerTool.Zoom}}" />
 
-        <!-- Window/Level 도구 선택 -->
+        <!-- Select Window/Level tool -->
         <ToggleButton Content="W/L"
                       Command="{Binding SelectToolCommand}"
                       CommandParameter="{x:Static viewmodels:ViewerTool.WindowLevel}"
@@ -99,17 +99,17 @@ public partial class ViewerViewModel : ObservableObject
 
 ---
 
-## 주의사항
+## Important Notes
 
-1. **네임스페이스 선언 필수**: enum이 정의된 어셈블리와 네임스페이스를 XAML에 선언해야 함
-2. **어셈블리 참조**: 다른 프로젝트의 enum을 사용할 경우 `assembly=` 지정 필요
-3. **Converter에도 적용**: `ConverterParameter`에도 동일하게 `x:Static` 사용
+1. **Namespace declaration required**: Must declare the assembly and namespace where enum is defined in XAML
+2. **Assembly reference**: Specify `assembly=` when using enum from different project
+3. **Also applies to Converter**: Use `x:Static` for `ConverterParameter` as well
 
 ---
 
-## 관련 패턴
+## Related Pattern
 
-### EnumToBoolConverter (선택 상태 확인용)
+### EnumToBoolConverter (for checking selection state)
 ```csharp
 public class EnumToBoolConverter : IValueConverter
 {

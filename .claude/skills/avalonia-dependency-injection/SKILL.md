@@ -3,13 +3,13 @@ name: avalonia-dependency-injection
 description: "AvaloniaUI에서 GenericHost와 DI 사용 패턴"
 ---
 
-# 6.6 Dependency Injection 및 GenericHost 사용
+# 6.6 Dependency Injection and GenericHost Usage
 
-AvaloniaUI에서도 WPF와 동일하게 GenericHost 패턴 적용
+Apply the same GenericHost pattern in AvaloniaUI as in WPF
 
-## 프로젝트 구조
+## Project Structure
 
-templates 폴더에 .NET 9 AvaloniaUI 프로젝트 예제가 포함되어 있습니다.
+The templates folder contains a .NET 9 AvaloniaUI project example.
 
 ```
 templates/
@@ -22,13 +22,13 @@ templates/
 │   ├── Program.cs
 │   ├── GlobalUsings.cs
 │   └── AvaloniaDISample.App.csproj
-└── AvaloniaDISample.ViewModels/    ← ViewModel Class Library (UI 프레임워크 독립)
+└── AvaloniaDISample.ViewModels/    ← ViewModel Class Library (UI framework independent)
     ├── MainViewModel.cs
     ├── GlobalUsings.cs
     └── AvaloniaDISample.ViewModels.csproj
 ```
 
-## App.axaml.cs 예시:
+## App.axaml.cs Example:
 
 ```csharp
 // App.axaml.cs
@@ -50,22 +50,18 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
-        // GenericHost 생성 및 서비스 등록
         // Create GenericHost and register services
         _host = Host.CreateDefaultBuilder()
             .ConfigureServices((context, services) =>
             {
-                // Services 등록
                 // Register services
                 services.AddSingleton<IUserRepository, UserRepository>();
                 services.AddSingleton<IUserService, UserService>();
                 services.AddTransient<IDialogService, DialogService>();
 
-                // ViewModels 등록
                 // Register ViewModels
                 services.AddTransient<MainViewModel>();
 
-                // Views 등록
                 // Register Views
                 services.AddSingleton<MainWindow>();
             })

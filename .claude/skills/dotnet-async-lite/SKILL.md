@@ -3,15 +3,15 @@ name: dotnet-async-lite
 description: '비동기 프로그래밍 핵심 패턴'
 ---
 
-# 비동기 프로그래밍 핵심
+# Async Programming Essentials
 
 ## 1. Task vs ValueTask
 
 ```csharp
-// 일반 비동기: Task 사용
+// General async: Use Task
 public async Task<Data> LoadAsync() { }
 
-// 캐시 히트 빈번: ValueTask 사용
+// Frequent cache hits: Use ValueTask
 public ValueTask<Data> GetAsync(string key)
 {
     if (_cache.TryGetValue(key, out var cached))
@@ -30,22 +30,22 @@ public async Task<Data> LoadAsync(CancellationToken ct = default)
     return await _httpClient.GetFromJsonAsync<Data>(url, ct);
 }
 
-// 타임아웃
+// Timeout
 using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
 await LongOperationAsync(cts.Token);
 ```
 
-## 3. 안티패턴
+## 3. Anti-patterns
 
 ```csharp
-// ❌ async void 금지
+// ❌ No async void
 public async void BadMethod() { }
 
-// ❌ .Result, .Wait() 금지 (데드락)
+// ❌ No .Result, .Wait() (deadlock)
 var result = GetDataAsync().Result;
 
-// ✅ await 사용
+// ✅ Use await
 var result = await GetDataAsync();
 ```
 
-> 상세 내용: `/dotnet-async` skill 참조
+> For details: See `/dotnet-async` skill

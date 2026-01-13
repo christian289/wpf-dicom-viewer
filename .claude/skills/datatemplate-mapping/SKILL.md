@@ -3,13 +3,13 @@ name: datatemplate-mapping
 description: "DataTemplate을 사용한 ViewModel-View 자동 매핑 및 네비게이션 패턴"
 ---
 
-# 5.8 DataTemplate을 사용한 View-ViewModel 자동 매핑
+# 5.8 Automatic View-ViewModel Mapping Using DataTemplate
 
-WPF에서 DataTemplate을 사용하면 ViewModel 타입과 View를 자동으로 매핑할 수 있습니다. 이 패턴은 네비게이션 시나리오나 동적 콘텐츠 표시에 매우 유용합니다.
+In WPF, DataTemplate allows automatic mapping between ViewModel types and Views. This pattern is very useful for navigation scenarios and dynamic content display.
 
-## 프로젝트 구조
+## Project Structure
 
-templates 폴더에 .NET 9 WPF 프로젝트 예제가 포함되어 있습니다.
+The templates folder contains a .NET 9 WPF project example.
 
 ```
 templates/
@@ -23,7 +23,7 @@ templates/
 │   ├── App.xaml.cs
 │   ├── MainWindow.xaml
 │   ├── MainWindow.xaml.cs
-│   ├── Mappings.xaml                    ← DataTemplate 매핑 정의
+│   ├── Mappings.xaml                    ← DataTemplate mapping definitions
 │   ├── GlobalUsings.cs
 │   └── WpfDataTemplateSample.App.csproj
 └── WpfDataTemplateSample.ViewModels/    ← ViewModel Class Library
@@ -34,18 +34,18 @@ templates/
     └── WpfDataTemplateSample.ViewModels.csproj
 ```
 
-#### 5.8.1 핵심 개념
+#### 5.8.1 Core Concept
 
-**ContentControl의 Content에 ViewModel 인스턴스를 바인딩하면, WPF가 자동으로 해당 ViewModel 타입에 맞는 DataTemplate을 찾아서 View를 렌더링합니다.**
+**When you bind a ViewModel instance to ContentControl's Content, WPF automatically finds the corresponding DataTemplate for that ViewModel type and renders the View.**
 
-이 패턴의 핵심:
-1. `Mappings.xaml`에 ViewModel 타입별 DataTemplate 정의
-2. `ContentControl.Content`에 ViewModel 인스턴스 바인딩
-3. WPF가 자동으로 타입을 매칭하여 해당 View 렌더링
+Key points of this pattern:
+1. Define DataTemplates for each ViewModel type in `Mappings.xaml`
+2. Bind ViewModel instances to `ContentControl.Content`
+3. WPF automatically matches types and renders the corresponding View
 
-#### 5.8.2 Mappings.xaml 패턴
+#### 5.8.2 Mappings.xaml Pattern
 
-**Mappings.xaml - ViewModel과 View 매핑 정의:**
+**Mappings.xaml - Define ViewModel and View mappings:**
 
 ```xml
 <!-- Mappings.xaml -->
@@ -54,8 +54,8 @@ templates/
                     xmlns:viewmodels="clr-namespace:WpfDataTemplateSample.ViewModels"
                     xmlns:views="clr-namespace:WpfDataTemplateSample.Views">
 
-    <!--  ViewModel과 View를 자동으로 매핑하는 DataTemplate 정의  -->
-    <!--  ContentControl의 Content에 ViewModel을 설정하면 자동으로 해당 View가 렌더링됨  -->
+    <!--  DataTemplate definitions that automatically map ViewModel to View  -->
+    <!--  Setting ViewModel to ContentControl's Content automatically renders the corresponding View  -->
 
     <DataTemplate DataType="{x:Type viewmodels:HomeViewModel}">
         <views:HomeView />
@@ -72,7 +72,7 @@ templates/
 </ResourceDictionary>
 ```
 
-**App.xaml - Mappings.xaml을 Application Resources에 병합:**
+**App.xaml - Merge Mappings.xaml into Application Resources:**
 
 ```xml
 <!-- App.xaml -->
@@ -90,9 +90,9 @@ templates/
 </Application>
 ```
 
-#### 5.8.3 네비게이션 패턴 구현
+#### 5.8.3 Navigation Pattern Implementation
 
-**MainWindowViewModel - CurrentViewModel 속성으로 화면 전환:**
+**MainWindowViewModel - Screen navigation via CurrentViewModel property:**
 
 ```csharp
 // ViewModels/MainWindowViewModel.cs
@@ -127,7 +127,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
 }
 ```
 
-**MainWindow.xaml - ContentControl로 동적 콘텐츠 표시:**
+**MainWindow.xaml - Display dynamic content with ContentControl:**
 
 ```xml
 <!-- MainWindow.xaml -->
@@ -135,7 +135,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:viewmodels="clr-namespace:WpfDataTemplateSample.ViewModels"
-        Title="DataTemplate 자동 매핑 Sample"
+        Title="DataTemplate Auto-Mapping Sample"
         Width="800"
         Height="500"
         WindowStartupLocation="CenterScreen">
@@ -146,7 +146,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <!--  Navigation 버튼 영역  -->
+        <!--  Navigation button area  -->
         <StackPanel Grid.Row="0"
                     Margin="10"
                     HorizontalAlignment="Center"
@@ -168,8 +168,8 @@ public sealed partial class MainWindowViewModel : ObservableObject
                     Content="User Profile" />
         </StackPanel>
 
-        <!--  ContentControl에 ViewModel을 바인딩하면 Mappings.xaml의 DataTemplate에 의해 자동으로 View가 렌더링됨  -->
-        <!--  핵심: Content에 ViewModel 타입을 설정하면 자동으로 해당 View가 표시됨  -->
+        <!--  Binding ViewModel to ContentControl renders the View automatically via DataTemplate in Mappings.xaml  -->
+        <!--  Key point: Setting a ViewModel type to Content automatically displays the corresponding View  -->
         <Border Grid.Row="1"
                 Margin="10"
                 BorderBrush="Gray"
@@ -197,7 +197,7 @@ public partial class MainWindow : Window
 }
 ```
 
-#### 5.8.4 ViewModel 및 View 구현 예시
+#### 5.8.4 ViewModel and View Implementation Examples
 
 **HomeViewModel:**
 
@@ -263,32 +263,32 @@ public partial class HomeView : UserControl
 }
 ```
 
-#### 5.8.5 핵심 원칙
+#### 5.8.5 Core Principles
 
-1. **DataTemplate의 DataType 속성**: ViewModel 타입을 지정하여 자동 매핑
-2. **x:Key 없이 정의**: DataType만 지정하면 WPF가 타입으로 자동 검색
-3. **ContentControl 사용**: Content 속성에 ViewModel 인스턴스 바인딩
-4. **Application Resources에 등록**: Mappings.xaml을 App.xaml에서 MergedDictionaries로 병합
-5. **View는 UserControl**: 재사용 가능한 UserControl로 View 정의
+1. **DataTemplate's DataType attribute**: Specifies ViewModel type for automatic mapping
+2. **Define without x:Key**: When only DataType is specified, WPF automatically searches by type
+3. **Use ContentControl**: Bind ViewModel instance to the Content property
+4. **Register in Application Resources**: Merge Mappings.xaml via MergedDictionaries in App.xaml
+5. **Views as UserControls**: Define Views as reusable UserControls
 
-#### 5.8.6 장점
+#### 5.8.6 Advantages
 
-1. **View-ViewModel 결합도 감소**: Code-Behind에서 View를 직접 생성하지 않음
-2. **선언적 매핑**: XAML에서 명시적으로 매핑 관계 정의
-3. **네비게이션 간소화**: ViewModel 인스턴스만 교체하면 자동으로 화면 전환
-4. **테스트 용이성**: ViewModel만으로 로직 테스트 가능
-5. **디자인 타임 지원**: `d:DataContext`를 통한 디자이너 미리보기 지원
+1. **Reduced View-ViewModel coupling**: No direct View creation in Code-Behind
+2. **Declarative mapping**: Explicitly define mapping relationships in XAML
+3. **Simplified navigation**: Automatic screen transitions by simply replacing ViewModel instances
+4. **Testability**: Logic can be tested with ViewModel alone
+5. **Design-time support**: Designer preview support via `d:DataContext`
 
-#### 5.8.7 주의사항
+#### 5.8.7 Important Notes
 
-**⚠️ 중요:**
-- DataTemplate은 `x:Key` 없이 정의해야 자동 매핑 동작
-- Mappings.xaml은 반드시 Application.Resources에 병합 필요
-- ViewModel 타입은 정확히 일치해야 함 (상속 관계 고려 안 됨)
-- ContentControl.Content에는 ViewModel 인스턴스를 바인딩 (타입이 아닌 인스턴스)
-- View는 DataContext를 자동으로 받음 (별도 설정 불필요)
+**⚠️ Important:**
+- DataTemplate must be defined without `x:Key` for automatic mapping to work
+- Mappings.xaml must be merged into Application.Resources
+- ViewModel types must match exactly (inheritance relationships are not considered)
+- Bind ViewModel instances (not types) to ContentControl.Content
+- Views automatically receive DataContext (no separate configuration needed)
 
-#### 5.8.8 프로젝트 구조 예시
+#### 5.8.8 Project Structure Example
 
 ```
 WpfDataTemplateSample/
@@ -308,7 +308,7 @@ WpfDataTemplateSample/
 ├── App.xaml.cs
 ├── MainWindow.xaml
 ├── MainWindow.xaml.cs
-├── Mappings.xaml              ← DataTemplate 매핑 정의
+├── Mappings.xaml              ← DataTemplate mapping definitions
 └── GlobalUsings.cs
 ```
 

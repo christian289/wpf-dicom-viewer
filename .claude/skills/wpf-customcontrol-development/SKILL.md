@@ -5,27 +5,27 @@ description: WPF CustomControl 개발을 위한 Parts and States Model 기반 Be
 
 # WPF CustomControl Development - Parts and States Model
 
-외관 커스터마이징이 가능한 WPF CustomControl 개발 워크플로우.
+Workflow for developing WPF CustomControls with appearance customization capability.
 
-## 개발 Flow
+## Development Flow
 
-### 1. Control 상속 결정
+### 1. Control Inheritance Decision
 
 ```
-UserControl 선택 조건:
-- 빠른 개발 필요
-- ControlTemplate 커스터마이징 불필요
-- 복잡한 테마 지원 불필요
+UserControl Selection Criteria:
+- Need rapid development
+- ControlTemplate customization not required
+- Complex theme support not required
 
-Control 상속 선택 조건:
-- ControlTemplate으로 외관 커스터마이징 필요
-- 다양한 테마 지원 필요
-- WPF 기본 컨트롤과 동일한 확장성 필요
+Control Inheritance Selection Criteria:
+- Need appearance customization via ControlTemplate
+- Need various theme support
+- Need same extensibility as WPF built-in controls
 ```
 
-### 2. Control Contract 정의
+### 2. Define Control Contract
 
-클래스에 `TemplatePart`와 `TemplateVisualState` 특성 선언:
+Declare `TemplatePart` and `TemplateVisualState` attributes on the class:
 
 ```csharp
 [TemplatePart(Name = PartUpButton, Type = typeof(RepeatButton))]
@@ -36,7 +36,7 @@ Control 상속 선택 조건:
 [TemplateVisualState(Name = StateUnfocused, GroupName = GroupFocusStates)]
 public class NumericUpDown : Control
 {
-    // Part/State 이름은 const로 정의
+    // Define Part/State names as const
     private const string PartUpButton = "PART_UpButton";
     private const string PartDownButton = "PART_DownButton";
     private const string GroupValueStates = "ValueStates";
@@ -48,9 +48,9 @@ public class NumericUpDown : Control
 }
 ```
 
-### 3. Template Part 속성 패턴
+### 3. Template Part Property Pattern
 
-Part 요소는 private 속성으로 래핑하고, setter에서 이벤트 구독/해제:
+Wrap Part elements as private properties, subscribe/unsubscribe events in setter:
 
 ```csharp
 private RepeatButton? _upButton;
@@ -59,66 +59,66 @@ private RepeatButton? UpButtonElement
     get => _upButton;
     set
     {
-        // 기존 요소의 이벤트 해제
+        // Unsubscribe from existing element's events
         if (_upButton is not null)
             _upButton.Click -= OnUpButtonClick;
 
         _upButton = value;
 
-        // 새 요소의 이벤트 구독
+        // Subscribe to new element's events
         if (_upButton is not null)
             _upButton.Click += OnUpButtonClick;
     }
 }
 ```
 
-### 4. OnApplyTemplate 구현
+### 4. OnApplyTemplate Implementation
 
 ```csharp
 public override void OnApplyTemplate()
 {
     base.OnApplyTemplate();
 
-    // GetTemplateChild + as 캐스팅 (타입 불일치 시 null)
+    // GetTemplateChild + as cast (null on type mismatch)
     UpButtonElement = GetTemplateChild(PartUpButton) as RepeatButton;
     DownButtonElement = GetTemplateChild(PartDownButton) as RepeatButton;
 
-    // 초기 상태 설정 (transition 없이)
+    // Set initial state (without transition)
     UpdateStates(useTransitions: false);
 }
 ```
 
-**핵심 원칙:**
+**Core Principles:**
 
-- Part가 없거나 타입이 다르면 null → 에러 발생시키지 않음
-- 컨트롤은 불완전한 ControlTemplate에서도 동작해야 함
+- If Part is missing or type differs, it's null → don't cause errors
+- Control must work even with incomplete ControlTemplate
 
-### 5. UpdateStates 헬퍼 메서드
+### 5. UpdateStates Helper Method
 
-상태 전환 로직을 단일 메서드로 중앙화:
+Centralize state transition logic in a single method:
 
 ```csharp
 private void UpdateStates(bool useTransitions)
 {
-    // ValueStates 그룹
+    // ValueStates group
     VisualStateManager.GoToState(this,
         Value >= 0 ? StatePositive : StateNegative,
         useTransitions);
 
-    // FocusStates 그룹
+    // FocusStates group
     VisualStateManager.GoToState(this,
         IsFocused ? StateFocused : StateUnfocused,
         useTransitions);
 }
 ```
 
-**UpdateStates 호출 시점:**
+**When to call UpdateStates:**
 
-- `OnApplyTemplate` - 초기 상태 (useTransitions: false)
-- 속성 변경 콜백 - 값 변경 반영 (useTransitions: true)
-- `OnGotFocus`/`OnLostFocus` - 포커스 상태 (useTransitions: true)
+- `OnApplyTemplate` - Initial state (useTransitions: false)
+- Property changed callback - Reflect value change (useTransitions: true)
+- `OnGotFocus`/`OnLostFocus` - Focus state (useTransitions: true)
 
-### 6. 속성 변경 콜백
+### 6. Property Changed Callback
 
 ```csharp
 private static void OnValueChanged(DependencyObject d,
@@ -130,7 +130,7 @@ private static void OnValueChanged(DependencyObject d,
 }
 ```
 
-### 7. ControlTemplate 구조 (Generic.xaml)
+### 7. ControlTemplate Structure (Generic.xaml)
 
 ```xml
 <Style TargetType="{x:Type local:NumericUpDown}">
@@ -139,7 +139,7 @@ private static void OnValueChanged(DependencyObject d,
       <ControlTemplate TargetType="{x:Type local:NumericUpDown}">
         <Grid Background="{TemplateBinding Background}">
 
-          <!-- VisualStateGroups는 루트 요소에 배치 -->
+          <!-- Place VisualStateGroups on root element -->
           <VisualStateManager.VisualStateGroups>
             <VisualStateGroup x:Name="ValueStates">
               <VisualState x:Name="Positive"/>
@@ -166,7 +166,7 @@ private static void OnValueChanged(DependencyObject d,
             </VisualStateGroup>
           </VisualStateManager.VisualStateGroups>
 
-          <!-- Part 요소는 x:Name으로 정의 -->
+          <!-- Define Part elements with x:Name -->
           <RepeatButton x:Name="PART_UpButton" Content="▲"/>
           <TextBlock x:Name="ValueText" Text="{TemplateBinding Value}"/>
           <RepeatButton x:Name="PART_DownButton" Content="▼"/>
@@ -178,15 +178,15 @@ private static void OnValueChanged(DependencyObject d,
 </Style>
 ```
 
-## 체크리스트
+## Checklist
 
-- [ ] Control 클래스 상속 (UserControl 아님)
-- [ ] `TemplatePart` 특성으로 필수 Part 선언
-- [ ] `TemplateVisualState` 특성으로 상태 선언
-- [ ] Part/State 이름은 const 문자열로 정의
-- [ ] Part 속성 setter에서 이벤트 구독/해제
-- [ ] `OnApplyTemplate`에서 `GetTemplateChild` + null 허용
-- [ ] `UpdateStates` 헬퍼로 상태 전환 중앙화
-- [ ] ControlTemplate 루트에 `VisualStateManager.VisualStateGroups` 배치
-- [ ] Themes/Generic.xaml에 기본 스타일 배치
-- [ ] 정적 생성자에서 `DefaultStyleKeyProperty.OverrideMetadata` 호출
+- [ ] Inherit from Control class (not UserControl)
+- [ ] Declare required Parts with `TemplatePart` attribute
+- [ ] Declare states with `TemplateVisualState` attribute
+- [ ] Define Part/State names as const strings
+- [ ] Subscribe/unsubscribe events in Part property setter
+- [ ] Use `GetTemplateChild` + allow null in `OnApplyTemplate`
+- [ ] Centralize state transitions with `UpdateStates` helper
+- [ ] Place `VisualStateManager.VisualStateGroups` on ControlTemplate root
+- [ ] Place default style in Themes/Generic.xaml
+- [ ] Call `DefaultStyleKeyProperty.OverrideMetadata` in static constructor

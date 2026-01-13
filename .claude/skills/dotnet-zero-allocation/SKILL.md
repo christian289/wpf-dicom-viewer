@@ -3,41 +3,41 @@ name: dotnet-zero-allocation
 description: '.NET 메모리 효율화 및 Zero Allocation 패턴 (Span, ArrayPool, ObjectPool)'
 ---
 
-# .NET 메모리 효율화, Zero Allocation
+# .NET Memory Efficiency, Zero Allocation
 
-GC 압박을 최소화하고 고성능 메모리 관리를 위한 API 사용 가이드입니다.
+A guide for APIs that minimize GC pressure and enable high-performance memory management.
 
-## 1. 핵심 개념
+## 1. Core Concepts
 
 - .NET CLR GC Heap Memory Optimization
-- Stack 할당 vs Heap 할당 이해
-- ref struct를 통한 Stack-only 타입
+- Understanding Stack allocation vs Heap allocation
+- Stack-only types through ref struct
 
-## 2. 주요 API
+## 2. Key APIs
 
-| API | 용도 | NuGet |
-|-----|------|-------|
-| `Span<T>`, `Memory<T>` | Stack 기반 메모리 슬라이싱 | BCL |
-| `ArrayPool<T>.Shared` | 배열 재사용으로 GC 압박 감소 | BCL |
-| `DefaultObjectPool<T>` | 객체 풀링 | Microsoft.Extensions.ObjectPool |
-| `MemoryCache` | 인메모리 캐싱 | System.Runtime.Caching |
+| API | Purpose | NuGet |
+|-----|---------|-------|
+| `Span<T>`, `Memory<T>` | Stack-based memory slicing | BCL |
+| `ArrayPool<T>.Shared` | Reduce GC pressure through array reuse | BCL |
+| `DefaultObjectPool<T>` | Object pooling | Microsoft.Extensions.ObjectPool |
+| `MemoryCache` | In-memory caching | System.Runtime.Caching |
 
 ---
 
 ## 3. Span<T>, ReadOnlySpan<T>
 
-### 3.1 기본 사용법
+### 3.1 Basic Usage
 
 ```csharp
-// 문자열 파싱 시 Zero Allocation
+// Zero Allocation when parsing strings
 public void ParseData(ReadOnlySpan<char> input)
 {
-    // Heap 할당 없이 문자열 조작
+    // String manipulation without Heap allocation
     var firstPart = input.Slice(0, 10);
     var secondPart = input.Slice(10);
 }
 
-// 배열 슬라이싱
+// Array slicing
 public void ProcessArray(int[] data)
 {
     Span<int> span = data.AsSpan();
@@ -46,22 +46,22 @@ public void ProcessArray(int[] data)
 }
 ```
 
-### 3.2 문자열 처리 최적화
+### 3.2 String Processing Optimization
 
 ```csharp
-// ❌ 나쁜 예: Substring은 새 문자열 할당
+// ❌ Bad example: Substring allocates new string
 string part = text.Substring(0, 10);
 
-// ✅ 좋은 예: AsSpan은 할당 없음
+// ✅ Good example: AsSpan has no allocation
 ReadOnlySpan<char> part = text.AsSpan(0, 10);
 ```
 
-### 3.3 stackalloc과 함께 사용
+### 3.3 Using with stackalloc
 
 ```csharp
 public void ProcessSmallBuffer()
 {
-    // Stack에 작은 버퍼 할당 (Heap 할당 없음)
+    // Allocate small buffer on Stack (no Heap allocation)
     Span<byte> buffer = stackalloc byte[256];
     FillBuffer(buffer);
 }
@@ -71,9 +71,9 @@ public void ProcessSmallBuffer()
 
 ## 4. ArrayPool<T>
 
-대용량 배열을 재사용하여 GC 압박을 줄입니다.
+Reduces GC pressure by reusing large arrays.
 
-### 4.1 기본 사용법
+### 4.1 Basic Usage
 
 ```csharp
 namespace MyApp.Services;
@@ -82,27 +82,27 @@ public sealed class DataProcessor
 {
     public void ProcessLargeData(int size)
     {
-        // 배열 대여 (Heap 할당 최소화)
+        // Rent array (minimize Heap allocation)
         var buffer = ArrayPool<byte>.Shared.Rent(size);
 
         try
         {
-            // 버퍼 사용 (요청 크기만큼만 사용)
+            // Use buffer (only use up to requested size)
             ProcessBuffer(buffer.AsSpan(0, size));
         }
         finally
         {
-            // 반드시 반환
+            // Must return
             ArrayPool<byte>.Shared.Return(buffer);
         }
     }
 }
 ```
 
-### 4.2 clearArray 옵션
+### 4.2 clearArray Option
 
 ```csharp
-// 민감한 데이터 처리 시 반환 전 초기화
+// Initialize before returning when handling sensitive data
 ArrayPool<byte>.Shared.Return(buffer, clearArray: true);
 ```
 
@@ -110,7 +110,7 @@ ArrayPool<byte>.Shared.Return(buffer, clearArray: true);
 
 ## 5. ObjectPool<T>
 
-비용이 큰 객체를 재사용합니다.
+Reuses expensive objects.
 
 ```csharp
 namespace MyApp.Services;
@@ -147,7 +147,7 @@ public sealed class HeavyObjectProcessor
 
 ## 6. Memory<T>
 
-Span<T>와 달리 필드에 저장하거나 async 메서드에서 사용 가능합니다.
+Unlike Span<T>, can be stored in fields or used in async methods.
 
 ```csharp
 public sealed class AsyncProcessor
@@ -159,7 +159,7 @@ public sealed class AsyncProcessor
         _buffer = new byte[size];
     }
 
-    // Memory<T>는 async 메서드에서 사용 가능
+    // Memory<T> can be used in async methods
     public async Task ProcessAsync()
     {
         await FillBufferAsync(_buffer);
@@ -170,7 +170,7 @@ public sealed class AsyncProcessor
 
 ---
 
-## 7. 필수 NuGet 패키지
+## 7. Required NuGet Package
 
 ```xml
 <ItemGroup>
@@ -180,35 +180,36 @@ public sealed class AsyncProcessor
 
 ---
 
-## 8. 주의사항
+## 8. Important Notes
 
-### ⚠️ Span<T> 제약
+### ⚠️ Span<T> Constraints
 
-- `Span<T>`, `ReadOnlySpan<T>`는 **async-await와 함께 사용 불가**
-- ref struct이므로 Boxing 불가
-- 클래스 필드로 저장 불가 (Memory<T> 사용)
-- 람다/클로저에서 캡처 불가
+- `Span<T>`, `ReadOnlySpan<T>` **cannot be used with async-await**
+- Cannot be boxed (ref struct)
+- Cannot be stored as class field (use Memory<T>)
+- Cannot be captured in lambdas/closures
 
-### ⚠️ ArrayPool 반환 필수
+### ⚠️ ArrayPool Return Required
 
-- `Rent()`로 대여한 배열은 반드시 `Return()` 호출
-- try-finally 패턴 사용 권장
-- 반환하지 않으면 메모리 누수 발생
+- Arrays rented with `Rent()` must be returned with `Return()`
+- Use try-finally pattern
+- Memory leak occurs if not returned
 
-### ⚠️ 대여 크기 vs 실제 크기
+### ⚠️ Rented Size vs Actual Size
 
 ```csharp
-// 요청한 크기보다 큰 배열이 반환될 수 있음
+// Array larger than requested may be returned
 var buffer = ArrayPool<byte>.Shared.Rent(100);
-// buffer.Length >= 100 (정확히 100이 아님)
+// buffer.Length >= 100 (not exactly 100)
 
-// 실제 사용 시 요청 크기만 사용
+// Use only requested size when actually using
 ProcessBuffer(buffer.AsSpan(0, 100));
 ```
 
 ---
 
-## 9. 참고 문서
+## 9. References
 
 - [Span<T> - Microsoft Docs](https://learn.microsoft.com/en-us/dotnet/api/system.span-1)
 - [ArrayPool<T> - Microsoft Docs](https://learn.microsoft.com/en-us/dotnet/api/system.buffers.arraypool-1)
+

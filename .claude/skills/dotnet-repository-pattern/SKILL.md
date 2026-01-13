@@ -3,11 +3,11 @@ name: dotnet-repository-pattern
 description: '.NET Repository 패턴과 Service Layer 구현'
 ---
 
-# .NET Repository 패턴
+# .NET Repository Pattern
 
-데이터 접근 계층을 추상화하는 Repository 패턴 구현 가이드입니다.
+A guide for implementing the Repository pattern that abstracts the data access layer.
 
-## 1. 프로젝트 구조
+## 1. Project Structure
 
 ```
 MyApp/
@@ -24,7 +24,7 @@ MyApp/
 └── GlobalUsings.cs
 ```
 
-## 2. Model 정의
+## 2. Model Definition
 
 ```csharp
 namespace MyApp.Models;
@@ -32,9 +32,9 @@ namespace MyApp.Models;
 public sealed record User(int Id, string Name, string Email);
 ```
 
-## 3. Repository 계층
+## 3. Repository Layer
 
-### 3.1 인터페이스
+### 3.1 Interface
 
 ```csharp
 namespace MyApp.Repositories;
@@ -49,7 +49,7 @@ public interface IUserRepository
 }
 ```
 
-### 3.2 구현체
+### 3.2 Implementation
 
 ```csharp
 namespace MyApp.Repositories;
@@ -89,9 +89,9 @@ public sealed class UserRepository : IUserRepository
 }
 ```
 
-## 4. Service 계층
+## 4. Service Layer
 
-### 4.1 인터페이스
+### 4.1 Interface
 
 ```csharp
 namespace MyApp.Services;
@@ -103,7 +103,7 @@ public interface IUserService
 }
 ```
 
-### 4.2 구현체
+### 4.2 Implementation
 
 ```csharp
 namespace MyApp.Services;
@@ -125,16 +125,16 @@ public sealed class UserService(IUserRepository repository) : IUserService
 }
 ```
 
-## 5. DI 등록
+## 5. DI Registration
 
 ```csharp
 var host = Host.CreateDefaultBuilder(args)
     .ConfigureServices(services =>
     {
-        // Repository 등록
+        // Register Repository
         services.AddSingleton<IUserRepository, UserRepository>();
 
-        // Service 등록
+        // Register Service
         services.AddSingleton<IUserService, UserService>();
 
         services.AddSingleton<App>();
@@ -142,7 +142,7 @@ var host = Host.CreateDefaultBuilder(args)
     .Build();
 ```
 
-## 6. Generic Repository (선택적)
+## 6. Generic Repository (Optional)
 
 ```csharp
 public interface IRepository<T> where T : class
@@ -155,21 +155,22 @@ public interface IRepository<T> where T : class
 }
 ```
 
-## 7. 계층 구조
+## 7. Layer Structure
 
 ```
 App (Presentation)
   ↓
-Service Layer (비즈니스 로직)
+Service Layer (Business Logic)
   ↓
-Repository Layer (데이터 접근)
+Repository Layer (Data Access)
   ↓
-Data Source (DB, API, File 등)
+Data Source (DB, API, File, etc.)
 ```
 
-## 8. 핵심 원칙
+## 8. Core Principles
 
-- Repository는 데이터 접근만 담당
-- 비즈니스 로직은 Service에 작성
-- 인터페이스로 추상화하여 테스트 용이성 확보
-- Constructor Injection으로 의존성 주입
+- Repository handles data access only
+- Business logic goes in Service
+- Abstract with interfaces for testability
+- Use Constructor Injection for dependencies
+

@@ -3,53 +3,52 @@ name: literal-string
 description: "C# Literal string을 const string으로 사전 정의하여 사용하는 패턴"
 ---
 
-# Literal String 처리
+# Literal String Handling
 
-C# 코드에서 Literal string을 처리하는 방법에 대한 가이드입니다.
+A guide on handling literal strings in C# code.
 
-## 프로젝트 구조
+## Project Structure
 
-templates 폴더에 .NET 9 Console Application 예제가 포함되어 있습니다.
+The templates folder contains a .NET 9 Console Application example.
 
 ```
 templates/
 └── LiteralStringSample/                ← .NET 9 Console Application
     ├── Constants/
-    │   ├── Messages.cs                 ← 일반 메시지 상수
-    │   └── LogMessages.cs              ← 로그 메시지 상수
-    ├── Program.cs                      ← Top-Level Statement 진입점
+    │   ├── Messages.cs                 ← General message constants
+    │   └── LogMessages.cs              ← Log message constants
+    ├── Program.cs                      ← Top-Level Statement entry point
     ├── GlobalUsings.cs
     └── LiteralStringSample.csproj
 ```
 
-## 규칙
+## Rule
 
-**Literal string에 대해서는 가급적 `const string`으로 사전에 정의하여 사용할 것**
+**Literal strings should preferably be pre-defined as `const string`**
 
-## 예시
+## Examples
 
-### 좋은 예
+### Good Example
 
 ```csharp
-// 좋은 예
-const string ErrorMessage = "오류가 발생했습니다.";
-// An error has occurred.
+// Good example
+const string ErrorMessage = "An error has occurred.";
 
 if (condition)
     throw new Exception(ErrorMessage);
 ```
 
-### 나쁜 예
+### Bad Example
 
 ```csharp
-// 나쁜 예
+// Bad example
 if (condition)
-    throw new Exception("오류가 발생했습니다.");
+    throw new Exception("An error has occurred.");
 ```
 
-## Constants 클래스 구조
+## Constants Class Structure
 
-메시지 유형별로 static class로 분리하여 관리:
+Manage by separating into static classes by message type:
 
 ```csharp
 // Constants/Messages.cs
@@ -57,18 +56,13 @@ namespace LiteralStringSample.Constants;
 
 public static class Messages
 {
-    // 오류 메시지
     // Error messages
-    public const string ErrorOccurred = "오류가 발생했습니다.";
-    // An error has occurred.
+    public const string ErrorOccurred = "An error has occurred.";
 
-    public const string InvalidInput = "잘못된 입력입니다.";
-    // Invalid input.
+    public const string InvalidInput = "Invalid input.";
 
-    // 성공 메시지
     // Success messages
-    public const string OperationSuccess = "작업이 성공적으로 완료되었습니다.";
-    // Operation completed successfully.
+    public const string OperationSuccess = "Operation completed successfully.";
 }
 ```
 
@@ -78,19 +72,15 @@ namespace LiteralStringSample.Constants;
 
 public static class LogMessages
 {
-    // 정보 로그
     // Information logs
-    public const string ApplicationStarted = "애플리케이션이 시작되었습니다.";
-    // Application started.
+    public const string ApplicationStarted = "Application started.";
 
-    // 포맷 문자열
     // Format strings
-    public const string UserLoggedIn = "사용자가 로그인했습니다: {0}";
-    // User logged in: {0}
+    public const string UserLoggedIn = "User logged in: {0}";
 }
 ```
 
-## 사용 예시
+## Usage Example
 
 ```csharp
 using LiteralStringSample.Constants;
@@ -109,15 +99,15 @@ catch (Exception)
     Console.WriteLine(Messages.ErrorOccurred);
 }
 
-// 포맷 문자열 사용
 // Using format strings
 Console.WriteLine(string.Format(LogMessages.UserLoggedIn, userName));
 ```
 
-## 이유
+## Reasons
 
-1. **유지보수성**: 메시지 변경 시 한 곳만 수정
-2. **재사용성**: 동일한 메시지를 여러 곳에서 사용 가능
-3. **타입 안전성**: 컴파일 타임에 오타 확인
-4. **성능**: 문자열 리터럴 중복 제거
-5. **일관성**: 한글/영문 메시지 쌍으로 관리
+1. **Maintainability**: Only one place to modify when changing messages
+2. **Reusability**: Same messages can be used in multiple places
+3. **Type safety**: Typos can be caught at compile time
+4. **Performance**: Eliminates string literal duplication
+5. **Consistency**: Messages can be managed in pairs (e.g., Korean/English)
+

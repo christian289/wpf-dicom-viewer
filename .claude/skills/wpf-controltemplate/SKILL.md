@@ -3,30 +3,30 @@ name: wpf-controltemplate
 description: WPF ControlTemplate을 사용한 컨트롤 외관 커스터마이징. Control 클래스를 상속받은 컨트롤의 시각적 구조 재정의, TemplateBinding, ContentPresenter, Trigger 패턴. (1) 기존 컨트롤 외관 완전 변경, (2) 상태별 시각적 피드백 구현, (3) TemplatedParent 바인딩 시 이 스킬 적용.
 ---
 
-# WPF ControlTemplate 패턴
+# WPF ControlTemplate Patterns
 
-Control 클래스에서 상속된 모든 컨트롤은 ControlTemplate을 통해 시각적 구조를 완전히 재정의할 수 있습니다.
+All controls inherited from the Control class can completely redefine their visual structure through ControlTemplate.
 
-## 1. 핵심 개념
+## 1. Core Concepts
 
 ### ControlTemplate vs Style
 
-| 구분 | Style | ControlTemplate |
-|------|-------|-----------------|
-| **역할** | 속성 값 일괄 설정 | 시각적 구조 재정의 |
-| **범위** | 속성 변경만 가능 | 전체 외관 변경 가능 |
-| **적용 대상** | 모든 FrameworkElement | Control 상속 클래스만 |
+| Aspect | Style | ControlTemplate |
+|--------|-------|-----------------|
+| **Role** | Batch property value setting | Visual structure redefinition |
+| **Scope** | Property changes only | Full appearance change possible |
+| **Target** | All FrameworkElements | Control-derived classes only |
 
-### ControlTemplate 구성 요소
+### ControlTemplate Components
 
-- **TargetType**: 템플릿이 적용될 컨트롤 타입
-- **TemplateBinding**: TemplatedParent 속성 연결
-- **ContentPresenter**: Content 속성 렌더링 위치 지정
-- **Triggers**: 상태별 시각적 변경
+- **TargetType**: Control type to which the template applies
+- **TemplateBinding**: Connection to TemplatedParent properties
+- **ContentPresenter**: Specifies where Content property is rendered
+- **Triggers**: State-based visual changes
 
 ---
 
-## 2. 기본 구현 패턴
+## 2. Basic Implementation Patterns
 
 ### 2.1 Button ControlTemplate (XAML)
 
@@ -38,7 +38,6 @@ Control 클래스에서 상속된 모든 컨트롤은 ControlTemplate을 통해 
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type Button}">
-                    <!-- 시각적 구조 정의 -->
                     <!-- Visual structure definition -->
                     <Border x:Name="PART_Border"
                             CornerRadius="10"
@@ -46,15 +45,13 @@ Control 클래스에서 상속된 모든 컨트롤은 ControlTemplate을 통해 
                             BorderBrush="{TemplateBinding BorderBrush}"
                             Background="{TemplateBinding Background}"
                             Padding="{TemplateBinding Padding}">
-                        
-                        <!-- Content 렌더링 위치 -->
+
                         <!-- Content rendering location -->
                         <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                                           VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
                                           RecognizesAccessKey="True"/>
                     </Border>
-                    
-                    <!-- 상태별 트리거 -->
+
                     <!-- State-based triggers -->
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
@@ -70,8 +67,7 @@ Control 클래스에서 상속된 모든 컨트롤은 ControlTemplate을 통해 
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
-        
-        <!-- 기본 속성 값 -->
+
         <!-- Default property values -->
         <Setter Property="Background" Value="#2196F3"/>
         <Setter Property="Foreground" Value="White"/>
@@ -83,7 +79,7 @@ Control 클래스에서 상속된 모든 컨트롤은 ControlTemplate을 통해 
 </ResourceDictionary>
 ```
 
-### 2.2 코드에서 ControlTemplate 적용
+### 2.2 Applying ControlTemplate in Code
 
 ```csharp
 namespace MyApp.Helpers;
@@ -97,17 +93,16 @@ using System.Windows.Markup;
 public static class TemplateHelper
 {
     /// <summary>
-    /// XAML 문자열로부터 ControlTemplate 생성
     /// Create ControlTemplate from XAML string
     /// </summary>
     public static ControlTemplate CreateTemplate(string xaml)
     {
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(xaml));
-        
+
         var context = new ParserContext();
         context.XmlnsDictionary.Add("", "http://schemas.microsoft.com/winfx/2006/xaml/presentation");
         context.XmlnsDictionary.Add("x", "http://schemas.microsoft.com/winfx/2006/xaml");
-        
+
         return (ControlTemplate)XamlReader.Load(stream, context);
     }
 }
@@ -117,39 +112,37 @@ public static class TemplateHelper
 
 ## 3. TemplateBinding vs Binding
 
-### 3.1 TemplateBinding (권장)
+### 3.1 TemplateBinding (Recommended)
 
 ```xml
-<!-- 컴파일 타임 바인딩, 단방향, 성능 우수 -->
 <!-- Compile-time binding, one-way, better performance -->
 <Border Background="{TemplateBinding Background}"/>
 ```
 
-### 3.2 RelativeSource TemplatedParent (양방향 필요 시)
+### 3.2 RelativeSource TemplatedParent (When Two-Way Needed)
 
 ```xml
-<!-- 런타임 바인딩, 양방향 가능, 상대적으로 느림 -->
 <!-- Runtime binding, two-way possible, relatively slower -->
 <Border Background="{Binding Background, RelativeSource={RelativeSource TemplatedParent}}"/>
 ```
 
-### 비교
+### Comparison
 
-| 구분 | TemplateBinding | RelativeSource TemplatedParent |
-|------|-----------------|-------------------------------|
-| **방향** | 단방향 (OneWay) | 양방향 가능 |
-| **성능** | 빠름 | 상대적으로 느림 |
-| **Converter** | 사용 불가 | 사용 가능 |
-| **용도** | 대부분의 경우 | 양방향/컨버터 필요 시 |
+| Aspect | TemplateBinding | RelativeSource TemplatedParent |
+|--------|-----------------|-------------------------------|
+| **Direction** | One-way (OneWay) | Two-way possible |
+| **Performance** | Fast | Relatively slower |
+| **Converter** | Not available | Available |
+| **Use case** | Most cases | When two-way/converter needed |
 
 ---
 
-## 4. ContentPresenter 상세
+## 4. ContentPresenter Details
 
-### 4.1 주요 속성
+### 4.1 Key Properties
 
 ```xml
-<ContentPresenter 
+<ContentPresenter
     Content="{TemplateBinding Content}"
     ContentTemplate="{TemplateBinding ContentTemplate}"
     ContentTemplateSelector="{TemplateBinding ContentTemplateSelector}"
@@ -163,20 +156,18 @@ public static class TemplateHelper
 ### 4.2 RecognizesAccessKey
 
 ```xml
-<!-- Alt + 밑줄 문자로 버튼 활성화 가능 -->
 <!-- Enable button activation with Alt + underlined character -->
-<Button Content="_Save"/>  <!-- Alt+S로 활성화 -->
+<Button Content="_Save"/>  <!-- Activate with Alt+S -->
 ```
 
 ---
 
-## 5. Trigger 패턴
+## 5. Trigger Patterns
 
 ### 5.1 Property Trigger
 
 ```xml
 <ControlTemplate.Triggers>
-    <!-- 단일 속성 조건 -->
     <!-- Single property condition -->
     <Trigger Property="IsMouseOver" Value="True">
         <Setter TargetName="PART_Border" Property="Background" Value="LightBlue"/>
@@ -188,7 +179,6 @@ public static class TemplateHelper
 
 ```xml
 <ControlTemplate.Triggers>
-    <!-- 복수 속성 조건 (AND) -->
     <!-- Multiple property conditions (AND) -->
     <MultiTrigger>
         <MultiTrigger.Conditions>
@@ -200,7 +190,7 @@ public static class TemplateHelper
 </ControlTemplate.Triggers>
 ```
 
-### 5.3 EventTrigger (애니메이션)
+### 5.3 EventTrigger (Animation)
 
 ```xml
 <ControlTemplate.Triggers>
@@ -218,7 +208,7 @@ public static class TemplateHelper
 
 ---
 
-## 6. 실전 예제: 토글 버튼
+## 6. Practical Example: Toggle Button
 
 ```xml
 <Style TargetType="{x:Type ToggleButton}" x:Key="SwitchToggleStyle">
@@ -226,14 +216,12 @@ public static class TemplateHelper
         <Setter.Value>
             <ControlTemplate TargetType="{x:Type ToggleButton}">
                 <Grid>
-                    <!-- 배경 트랙 -->
                     <!-- Background track -->
                     <Border x:Name="PART_Track"
                             Width="50" Height="26"
                             CornerRadius="13"
                             Background="#E0E0E0"/>
-                    
-                    <!-- 슬라이딩 썸 -->
+
                     <!-- Sliding thumb -->
                     <Border x:Name="PART_Thumb"
                             Width="22" Height="22"
@@ -246,17 +234,15 @@ public static class TemplateHelper
                         </Border.Effect>
                     </Border>
                 </Grid>
-                
+
                 <ControlTemplate.Triggers>
-                    <!-- 체크됨 상태 -->
                     <!-- Checked state -->
                     <Trigger Property="IsChecked" Value="True">
                         <Setter TargetName="PART_Track" Property="Background" Value="#4CAF50"/>
                         <Setter TargetName="PART_Thumb" Property="HorizontalAlignment" Value="Right"/>
                         <Setter TargetName="PART_Thumb" Property="Margin" Value="0,0,2,0"/>
                     </Trigger>
-                    
-                    <!-- 비활성화 상태 -->
+
                     <!-- Disabled state -->
                     <Trigger Property="IsEnabled" Value="False">
                         <Setter Property="Opacity" Value="0.5"/>
@@ -270,12 +256,11 @@ public static class TemplateHelper
 
 ---
 
-## 7. PART_ 네이밍 컨벤션
+## 7. PART_ Naming Convention
 
-CustomControl에서 코드 비하인드가 특정 요소에 접근해야 할 때 사용:
+Used when code-behind in CustomControl needs to access specific elements:
 
 ```xml
-<!-- PART_ 접두사로 필수 요소 표시 -->
 <!-- Mark required elements with PART_ prefix -->
 <Border x:Name="PART_Border"/>
 <ContentPresenter x:Name="PART_ContentHost"/>
@@ -283,12 +268,11 @@ CustomControl에서 코드 비하인드가 특정 요소에 접근해야 할 때
 ```
 
 ```csharp
-// OnApplyTemplate에서 PART_ 요소 검색
 // Find PART_ elements in OnApplyTemplate
 public override void OnApplyTemplate()
 {
     base.OnApplyTemplate();
-    
+
     var border = GetTemplateChild("PART_Border") as Border;
     var popup = GetTemplateChild("PART_Popup") as Popup;
 }
@@ -296,18 +280,18 @@ public override void OnApplyTemplate()
 
 ---
 
-## 8. 체크리스트
+## 8. Checklist
 
-- [ ] TargetType 명시
-- [ ] TemplateBinding으로 속성 연결
-- [ ] ContentPresenter에 RecognizesAccessKey="True" 설정
-- [ ] IsMouseOver, IsPressed, IsEnabled, IsFocused 트리거 처리
-- [ ] PART_ 네이밍으로 필수 요소 표시
-- [ ] 기본 속성 값을 Style의 Setter로 지정
+- [ ] Specify TargetType
+- [ ] Connect properties with TemplateBinding
+- [ ] Set RecognizesAccessKey="True" on ContentPresenter
+- [ ] Handle IsMouseOver, IsPressed, IsEnabled, IsFocused triggers
+- [ ] Mark required elements with PART_ naming
+- [ ] Specify default property values with Style's Setter
 
 ---
 
-## 9. 참고 문서
+## 9. References
 
 - [ControlTemplate - Microsoft Docs](https://learn.microsoft.com/en-us/dotnet/desktop/wpf/controls/controltemplate)
 - [Styling and Templating - Microsoft Docs](https://learn.microsoft.com/en-us/dotnet/desktop/wpf/controls/styles-templates-overview)

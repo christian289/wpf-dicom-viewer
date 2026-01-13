@@ -3,13 +3,13 @@ name: dependency-injection
 description: "Microsoft.Extensions.DependencyInjection과 GenericHost를 사용한 의존성 주입 패턴"
 ---
 
-# Dependency Injection 및 GenericHost 사용
+# Dependency Injection and GenericHost Usage
 
-.NET 프로젝트에서 Dependency Injection과 GenericHost를 사용하는 방법에 대한 가이드입니다.
+A guide on using Dependency Injection and GenericHost in .NET projects.
 
-## 프로젝트 구조
+## Project Structure
 
-templates 폴더에 .NET 9 WPF 프로젝트 예제가 포함되어 있습니다.
+The templates folder contains a .NET 9 WPF project example.
 
 ```
 templates/
@@ -21,48 +21,43 @@ templates/
 │   ├── App.xaml.cs
 │   ├── GlobalUsings.cs
 │   └── WpfDISample.App.csproj
-└── WpfDISample.ViewModels/    ← ViewModel Class Library (UI 프레임워크 독립)
+└── WpfDISample.ViewModels/    ← ViewModel Class Library (UI framework independent)
     ├── MainViewModel.cs
     ├── GlobalUsings.cs
     └── WpfDISample.ViewModels.csproj
 ```
 
-## 핵심 원칙
+## Core Principles
 
-- **Microsoft.Extensions.DependencyInjection을 사용하여 의존성 주입 구현**
-- **GenericHost (Microsoft.Extensions.Hosting)를 기본으로 사용**
-- **Constructor Injection을 통한 서비스 주입 방식 적용**
+- **Implement dependency injection using Microsoft.Extensions.DependencyInjection**
+- **Use GenericHost (Microsoft.Extensions.Hosting) as the default**
+- **Apply service injection through Constructor Injection**
 
-## Console 및 일반 프로젝트 - Program.cs
+## Console and General Projects - Program.cs
 
 ```csharp
 // Program.cs
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
-// GenericHost를 사용한 DI 설정
 // Configure DI using GenericHost
 var host = Host.CreateDefaultBuilder(args)
     .ConfigureServices((context, services) =>
     {
-        // 서비스 등록
         // Register services
         services.AddSingleton<IUserRepository, UserRepository>();
         services.AddScoped<IUserService, UserService>();
         services.AddTransient<IEmailService, EmailService>();
 
-        // 메인 애플리케이션 서비스 등록
         // Register main application service
         services.AddSingleton<App>();
     })
     .Build();
 
-// ServiceProvider를 통해 서비스 가져오기
 // Get service through ServiceProvider
 var app = host.Services.GetRequiredService<App>();
 await app.RunAsync();
 
-// 애플리케이션 클래스 - Constructor Injection
 // Application class - Constructor Injection
 public sealed class App(IUserService userService, IEmailService emailService)
 {
@@ -71,7 +66,6 @@ public sealed class App(IUserService userService, IEmailService emailService)
 
     public async Task RunAsync()
     {
-        // 주입된 서비스 사용
         // Use injected services
         var users = await _userService.GetAllUsersAsync();
 
@@ -83,7 +77,7 @@ public sealed class App(IUserService userService, IEmailService emailService)
 }
 ```
 
-## WPF 프로젝트 - App.xaml.cs
+## WPF Project - App.xaml.cs
 
 ```csharp
 // App.xaml.cs
@@ -99,23 +93,19 @@ public partial class App : Application
 
     public App()
     {
-        // GenericHost 생성 및 서비스 등록
         // Create GenericHost and register services
         _host = Host.CreateDefaultBuilder()
             .ConfigureServices((context, services) =>
             {
-                // Services 등록
                 // Register services
                 services.AddSingleton<IUserRepository, UserRepository>();
                 services.AddSingleton<IUserService, UserService>();
                 services.AddTransient<IDialogService, DialogService>();
 
-                // ViewModels 등록
                 // Register ViewModels
                 services.AddTransient<MainViewModel>();
                 services.AddTransient<SettingsViewModel>();
 
-                // Views 등록
                 // Register Views
                 services.AddSingleton<MainWindow>();
             })
@@ -126,7 +116,6 @@ public partial class App : Application
     {
         await _host.StartAsync();
 
-        // MainWindow를 ServiceProvider로부터 가져오기
         // Get MainWindow from ServiceProvider
         var mainWindow = _host.Services.GetRequiredService<MainWindow>();
         mainWindow.Show();
@@ -156,7 +145,6 @@ using System.Windows;
 
 public partial class MainWindow : Window
 {
-    // Constructor Injection을 통한 ViewModel 주입
     // ViewModel injection through Constructor Injection
     public MainWindow(MainViewModel viewModel)
     {
@@ -202,37 +190,35 @@ public sealed partial class MainViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            await _dialogService.ShowErrorAsync("오류 발생", ex.Message);
-            // Error occurred
+            await _dialogService.ShowErrorAsync("Error occurred", ex.Message);
         }
     }
 }
 ```
 
-## 서비스 Lifetime 규칙
+## Service Lifetime Rules
 
 ### Singleton
-애플리케이션 전체에서 하나의 인스턴스만 생성
-- Repository, 전역 상태 관리 서비스
+Creates only one instance throughout the application
+- Repository, global state management services
 - `services.AddSingleton<IUserRepository, UserRepository>()`
 
 ### Scoped
-요청(Scope)당 하나의 인스턴스 생성
-- DbContext, 트랜잭션 단위 서비스
+Creates one instance per request (Scope)
+- DbContext, transaction-based services
 - `services.AddScoped<IUserService, UserService>()`
-- ⚠️ WPF에서는 일반적으로 사용하지 않음 (Web 애플리케이션에서 주로 사용)
+- ⚠️ Generally not used in WPF (mainly used in Web applications)
 
 ### Transient
-요청할 때마다 새 인스턴스 생성
-- ViewModel, 일회성 서비스
+Creates a new instance on every request
+- ViewModel, one-time services
 - `services.AddTransient<MainViewModel>()`
 
-## ServiceProvider 직접 사용 (권장하지 않음)
+## Direct Use of ServiceProvider (Not Recommended)
 
-### 안티패턴: Service Locator
+### Anti-pattern: Service Locator
 
 ```csharp
-// Service Locator 패턴 (안티패턴)
 // Service Locator pattern (anti-pattern)
 public sealed class SomeClass
 {
@@ -245,17 +231,15 @@ public sealed class SomeClass
 
     public void DoSomething()
     {
-        // ⚠️ 권장하지 않음: ServiceProvider를 직접 사용
-        // Not recommended: Using ServiceProvider directly
+        // ⚠️ Not recommended: Using ServiceProvider directly
         var service = _serviceProvider.GetRequiredService<IUserService>();
     }
 }
 ```
 
-### 권장: Constructor Injection
+### Recommended: Constructor Injection
 
 ```csharp
-// 올바른 방법: Constructor Injection 사용
 // Correct way: Use Constructor Injection
 public sealed class SomeClass
 {
@@ -268,14 +252,13 @@ public sealed class SomeClass
 
     public void DoSomething()
     {
-        // ✅ 권장: Constructor Injection으로 주입받은 서비스 사용
-        // Recommended: Use service injected through Constructor Injection
+        // ✅ Recommended: Use service injected through Constructor Injection
         _userService.GetAllUsersAsync();
     }
 }
 ```
 
-## 필수 NuGet 패키지
+## Required NuGet Packages
 
 ```xml
 <ItemGroup>
@@ -283,3 +266,4 @@ public sealed class SomeClass
   <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.0" />
 </ItemGroup>
 ```
+

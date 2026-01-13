@@ -3,36 +3,36 @@ name: dotnet-fast-lookup
 description: '.NET 고속 탐색 패턴 (HashSet, FrozenSet, Dictionary 최적화)'
 ---
 
-# .NET 고속 탐색
+# .NET Fast Lookup
 
-O(1) 시간 복잡도를 활용한 고속 탐색 API 가이드입니다.
+A guide for fast lookup APIs leveraging O(1) time complexity.
 
-## 1. 핵심 API
+## 1. Core APIs
 
-| API | 시간 복잡도 | 특징 |
-|-----|------------|------|
-| `HashSet<T>` | O(1) | 가변, 중복 불가 |
-| `FrozenSet<T>` | O(1) | 불변, .NET 8+ |
-| `Dictionary<K,V>` | O(1) | 가변, Key-Value |
-| `FrozenDictionary<K,V>` | O(1) | 불변, .NET 8+ |
+| API | Time Complexity | Features |
+|-----|-----------------|----------|
+| `HashSet<T>` | O(1) | Mutable, no duplicates |
+| `FrozenSet<T>` | O(1) | Immutable, .NET 8+ |
+| `Dictionary<K,V>` | O(1) | Mutable, Key-Value |
+| `FrozenDictionary<K,V>` | O(1) | Immutable, .NET 8+ |
 
 ---
 
 ## 2. HashSet<T>
 
 ```csharp
-// O(1) 시간 복잡도로 존재 여부 확인
+// O(1) time complexity for existence check
 var allowedIds = new HashSet<int> { 1, 2, 3, 4, 5 };
 
 if (allowedIds.Contains(userId))
 {
-    // 허용된 사용자
+    // Allowed user
 }
 
-// 집합 연산
-setA.IntersectWith(setB); // 교집합
-setA.UnionWith(setB);     // 합집합
-setA.ExceptWith(setB);    // 차집합
+// Set operations
+setA.IntersectWith(setB); // Intersection
+setA.UnionWith(setB);     // Union
+setA.ExceptWith(setB);    // Difference
 ```
 
 ---
@@ -42,43 +42,43 @@ setA.ExceptWith(setB);    // 차집합
 ```csharp
 using System.Collections.Frozen;
 
-// 불변 고속 탐색 (읽기 전용 시나리오)
+// Immutable fast lookup (read-only scenarios)
 var allowedExtensions = new[] { ".jpg", ".png", ".gif" }
     .ToFrozenSet(StringComparer.OrdinalIgnoreCase);
 
 if (allowedExtensions.Contains(fileExtension))
 {
-    // 허용된 확장자
+    // Allowed extension
 }
 ```
 
 ---
 
-## 4. Dictionary<K,V> 최적화
+## 4. Dictionary<K,V> Optimization
 
 ```csharp
-// ❌ 두 번 조회
+// ❌ Two lookups
 if (dict.ContainsKey(key))
 {
     var value = dict[key];
 }
 
-// ✅ 한 번 조회
+// ✅ Single lookup
 if (dict.TryGetValue(key, out var value))
 {
-    // value 사용
+    // Use value
 }
 
-// 기본값과 함께 조회
+// Lookup with default value
 var value = dict.GetValueOrDefault(key, defaultValue);
 ```
 
 ---
 
-## 5. 비교자 (Comparer) 최적화
+## 5. Comparer Optimization
 
 ```csharp
-// 문자열 대소문자 무시 비교
+// Case-insensitive string comparison
 var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 set.Add("Hello");
 set.Contains("HELLO"); // true
@@ -86,19 +86,19 @@ set.Contains("HELLO"); // true
 
 ---
 
-## 6. 사용 시점
+## 6. When to Use
 
-| 시나리오 | 권장 컬렉션 |
-|----------|------------|
-| 자주 변경되는 집합 | `HashSet<T>` |
-| 읽기 전용 설정 데이터 | `FrozenSet<T>` |
-| 빈번한 존재 여부 확인 | `HashSet<T>` / `FrozenSet<T>` |
-| Key-Value 캐시 | `Dictionary<K,V>` |
-| 정적 매핑 테이블 | `FrozenDictionary<K,V>` |
+| Scenario | Recommended Collection |
+|----------|------------------------|
+| Frequently modified set | `HashSet<T>` |
+| Read-only configuration data | `FrozenSet<T>` |
+| Frequent existence checks | `HashSet<T>` / `FrozenSet<T>` |
+| Key-Value cache | `Dictionary<K,V>` |
+| Static mapping table | `FrozenDictionary<K,V>` |
 
 ---
 
-## 7. 참고 문서
+## 7. References
 
 - [HashSet<T>](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.hashset-1)
 - [FrozenSet<T>](https://learn.microsoft.com/en-us/dotnet/api/system.collections.frozen.frozenset-1)

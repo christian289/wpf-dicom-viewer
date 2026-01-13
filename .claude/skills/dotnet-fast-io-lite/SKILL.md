@@ -3,9 +3,9 @@ name: dotnet-fast-io-lite
 description: '고속 I/O 핵심 패턴'
 ---
 
-# 고속 I/O 핵심
+# High-Performance I/O Essentials
 
-## 1. 고속 표준 입출력
+## 1. High-Speed Standard I/O
 
 ```csharp
 using var reader = new StreamReader(
@@ -18,14 +18,14 @@ using var writer = new StreamWriter(
 
 writer.AutoFlush = false;
 
-// 처리 후 수동 플러시
+// Manual flush after processing
 writer.Flush();
 ```
 
-## 2. 파일 I/O
+## 2. File I/O
 
 ```csharp
-// 64KB 버퍼로 순차 읽기
+// Sequential read with 64KB buffer
 using var stream = new FileStream(
     path,
     FileMode.Open,
@@ -42,12 +42,12 @@ using var handle = File.OpenHandle(path, FileMode.Open, FileAccess.Read);
 int bytesRead = await RandomAccess.ReadAsync(handle, buffer, offset);
 ```
 
-## 4. 성능 비교
+## 4. Performance Comparison
 
-| 방식 | 상대 성능 |
-|------|----------|
+| Method | Relative Performance |
+|--------|---------------------|
 | Console.ReadLine() | 1x |
 | StreamReader (64KB) | 3-5x |
 | MemoryMappedFile | 5-10x |
 
-> 상세 내용: `/dotnet-fast-io` skill 참조
+> For details: See `/dotnet-fast-io` skill

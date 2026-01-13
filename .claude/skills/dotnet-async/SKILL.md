@@ -3,57 +3,57 @@ name: dotnet-async
 description: '.NET 비동기 프로그래밍 패턴 (Task, ValueTask, ConfigureAwait)'
 ---
 
-# .NET 비동기 프로그래밍
+# .NET Asynchronous Programming
 
-효율적인 비동기 프로그래밍을 위한 API 및 패턴 가이드입니다.
+A guide for APIs and patterns for efficient asynchronous programming.
 
-## 1. 핵심 API
+## 1. Core APIs
 
-| API | 용도 |
-|-----|------|
-| `Task` | 비동기 작업 (반환값 없음) |
-| `Task<T>` | 비동기 작업 (반환값 있음) |
-| `ValueTask<T>` | 고빈도 호출 최적화 |
-| `IAsyncEnumerable<T>` | 비동기 스트림 |
+| API | Purpose |
+|-----|---------|
+| `Task` | Async operation (no return value) |
+| `Task<T>` | Async operation (with return value) |
+| `ValueTask<T>` | Optimization for high-frequency calls |
+| `IAsyncEnumerable<T>` | Async streams |
 
 ---
 
 ## 2. Task vs ValueTask
 
-### 2.1 Task<T> 사용 시점
+### 2.1 When to Use Task<T>
 
-- 대부분의 비동기 작업
-- 항상 실제 비동기 작업이 발생하는 경우
+- Most async operations
+- When actual async work always occurs
 
-### 2.2 ValueTask<T> 사용 시점
+### 2.2 When to Use ValueTask<T>
 
-- 동기적 완료가 빈번한 경우 (캐시 히트)
-- 고빈도 호출 메서드
+- When synchronous completion is frequent (cache hits)
+- High-frequency call methods
 
 ```csharp
-// 캐시 히트가 빈번한 경우 ValueTask 사용
+// Use ValueTask when cache hits are frequent
 public ValueTask<Data> GetDataAsync(string key)
 {
     if (_cache.TryGetValue(key, out var cached))
     {
-        // 동기적 반환 (Heap 할당 없음)
+        // Synchronous return (no Heap allocation)
         return new ValueTask<Data>(cached);
     }
 
-    // 비동기 작업 필요 시
+    // When async work is needed
     return new ValueTask<Data>(LoadFromDbAsync(key));
 }
 ```
 
-### 2.3 ValueTask 주의사항
+### 2.3 ValueTask Cautions
 
 ```csharp
-// ❌ 나쁜 예: ValueTask를 여러 번 await
+// ❌ Bad example: Awaiting ValueTask multiple times
 var task = GetDataAsync("key");
 var result1 = await task;
-var result2 = await task; // 오류 발생 가능!
+var result2 = await task; // May cause error!
 
-// ✅ 좋은 예: 한 번만 await
+// ✅ Good example: Await only once
 var result = await GetDataAsync("key");
 ```
 
@@ -62,7 +62,7 @@ var result = await GetDataAsync("key");
 ## 3. ConfigureAwait
 
 ```csharp
-// 라이브러리에서는 ConfigureAwait(false) 사용
+// Use ConfigureAwait(false) in libraries
 public async Task<string> FetchDataAsync()
 {
     var response = await _httpClient.GetAsync(url)
@@ -74,7 +74,7 @@ public async Task<string> FetchDataAsync()
 
 ---
 
-## 4. 비동기 스트림 (IAsyncEnumerable)
+## 4. Async Streams (IAsyncEnumerable)
 
 ```csharp
 public async IAsyncEnumerable<Data> GetDataStreamAsync(
@@ -86,7 +86,7 @@ public async IAsyncEnumerable<Data> GetDataStreamAsync(
     }
 }
 
-// 소비
+// Consuming
 await foreach (var data in GetDataStreamAsync(ct))
 {
     Console.WriteLine(data);
@@ -95,7 +95,7 @@ await foreach (var data in GetDataStreamAsync(ct))
 
 ---
 
-## 5. 취소 토큰 (CancellationToken)
+## 5. Cancellation Token
 
 ```csharp
 public async Task<Data> LoadDataAsync(CancellationToken ct = default)
@@ -104,14 +104,14 @@ public async Task<Data> LoadDataAsync(CancellationToken ct = default)
     return await _httpClient.GetFromJsonAsync<Data>(url, ct);
 }
 
-// 타임아웃 설정
+// Setting timeout
 using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
 await LongRunningOperationAsync(cts.Token);
 ```
 
 ---
 
-## 6. 동시성 제어
+## 6. Concurrency Control
 
 ```csharp
 private readonly SemaphoreSlim _semaphore = new(maxCount: 10);
@@ -132,28 +132,28 @@ public async Task ProcessWithThrottlingAsync(Data data)
 
 ---
 
-## 7. 안티패턴
+## 7. Anti-patterns
 
 ```csharp
-// ❌ async void 금지 (예외 처리 불가)
+// ❌ No async void (cannot handle exceptions)
 public async void BadMethod() { }
 
 // ✅ async Task
 public async Task GoodMethod() { }
 
-// ❌ .Result, .Wait() 금지 (데드락 위험)
+// ❌ No .Result, .Wait() (deadlock risk)
 var result = GetDataAsync().Result;
 
-// ✅ await 사용
+// ✅ Use await
 var result = await GetDataAsync();
 
-// ❌ 불필요한 async/await
+// ❌ Unnecessary async/await
 public async Task<Data> GetDataAsync()
 {
     return await _repository.GetAsync();
 }
 
-// ✅ 직접 반환
+// ✅ Direct return
 public Task<Data> GetDataAsync()
 {
     return _repository.GetAsync();
@@ -162,7 +162,8 @@ public Task<Data> GetDataAsync()
 
 ---
 
-## 8. 참고 문서
+## 8. References
 
 - [Task-based Asynchronous Pattern](https://learn.microsoft.com/en-us/dotnet/standard/asynchronous-programming-patterns/task-based-asynchronous-pattern-tap)
 - [ValueTask](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.valuetask-1)
+

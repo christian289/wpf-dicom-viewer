@@ -3,17 +3,17 @@ name: dotnet-fast-lookup-lite
 description: '고속 탐색 핵심 패턴'
 ---
 
-# 고속 탐색 핵심
+# Fast Lookup Essentials
 
 ## 1. HashSet<T>
 
 ```csharp
-// O(1) 존재 여부 확인
+// O(1) existence check
 var allowedIds = new HashSet<int> { 1, 2, 3, 4, 5 };
 
 if (allowedIds.Contains(userId))
 {
-    // 허용된 사용자
+    // Allowed user
 }
 ```
 
@@ -22,31 +22,31 @@ if (allowedIds.Contains(userId))
 ```csharp
 using System.Collections.Frozen;
 
-// 불변 고속 탐색
+// Immutable fast lookup
 var allowedExtensions = new[] { ".jpg", ".png", ".gif" }
     .ToFrozenSet(StringComparer.OrdinalIgnoreCase);
 ```
 
-## 3. Dictionary 최적화
+## 3. Dictionary Optimization
 
 ```csharp
-// ❌ 두 번 조회
+// ❌ Two lookups
 if (dict.ContainsKey(key))
     var value = dict[key];
 
-// ✅ 한 번 조회
+// ✅ Single lookup
 if (dict.TryGetValue(key, out var value))
 {
-    // value 사용
+    // Use value
 }
 ```
 
-## 4. 사용 시점
+## 4. When to Use
 
-| 시나리오 | 권장 컬렉션 |
-|----------|--------------|
-| 자주 변경되는 집합 | `HashSet<T>` |
-| 읽기 전용 설정 | `FrozenSet<T>` |
-| Key-Value 캐시 | `Dictionary<K,V>` |
+| Scenario | Recommended Collection |
+|----------|------------------------|
+| Frequently modified set | `HashSet<T>` |
+| Read-only configuration | `FrozenSet<T>` |
+| Key-Value cache | `Dictionary<K,V>` |
 
-> 상세 내용: `/dotnet-fast-lookup` skill 참조
+> For details: See `/dotnet-fast-lookup` skill

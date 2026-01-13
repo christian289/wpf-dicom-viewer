@@ -3,33 +3,33 @@ name: dotnet-fast-io
 description: '.NET 고속 표준 입출력 및 파일 I/O 최적화'
 ---
 
-# .NET 고속 입출력
+# .NET High-Performance I/O
 
-대용량 데이터 입출력 최적화를 위한 API 가이드입니다.
+A guide for APIs optimizing large-scale data input/output.
 
-## 1. 핵심 API
+## 1. Core APIs
 
-| API | 용도 |
-|-----|------|
-| `Console.OpenStandardInput()` | 버퍼 스트림 입력 |
-| `Console.OpenStandardOutput()` | 버퍼 스트림 출력 |
-| `BufferedStream` | 스트림 버퍼링 |
-| `FileOptions.Asynchronous` | 비동기 파일 I/O |
+| API | Purpose |
+|-----|---------|
+| `Console.OpenStandardInput()` | Buffered stream input |
+| `Console.OpenStandardOutput()` | Buffered stream output |
+| `BufferedStream` | Stream buffering |
+| `FileOptions.Asynchronous` | Async file I/O |
 
 ---
 
-## 2. 고속 표준 입출력
+## 2. High-Speed Standard I/O
 
-### 2.1 기본 패턴
+### 2.1 Basic Pattern
 
 ```csharp
-// 대용량 입출력 시 버퍼 스트림 직접 사용
+// Use buffer stream directly for large I/O
 using var inputStream = Console.OpenStandardInput();
 using var outputStream = Console.OpenStandardOutput();
 using var reader = new StreamReader(inputStream, bufferSize: 65536);
 using var writer = new StreamWriter(outputStream, bufferSize: 65536);
 
-// 버퍼 플러시 비활성화로 성능 향상
+// Disable buffer flush for performance improvement
 writer.AutoFlush = false;
 
 string? line;
@@ -38,22 +38,22 @@ while ((line = reader.ReadLine()) is not null)
     writer.WriteLine(ProcessLine(line));
 }
 
-// 마지막에 수동 플러시
+// Manual flush at the end
 writer.Flush();
 ```
 
-### 2.2 알고리즘 문제 풀이용
+### 2.2 For Algorithm Problem Solving
 
 ```csharp
 using System.Text;
 
-// 고속 입력
+// High-speed input
 using var reader = new StreamReader(
     Console.OpenStandardInput(),
     Encoding.ASCII,
     bufferSize: 65536);
 
-// 고속 출력
+// High-speed output
 using var writer = new StreamWriter(
     Console.OpenStandardOutput(),
     Encoding.ASCII,
@@ -61,7 +61,7 @@ using var writer = new StreamWriter(
 
 var sb = new StringBuilder();
 
-// 대량 출력은 StringBuilder로 모은 후 한 번에 출력
+// Collect large output in StringBuilder and write at once
 for (int i = 0; i < 100000; i++)
 {
     sb.AppendLine(i.ToString());
@@ -73,12 +73,12 @@ writer.Flush();
 
 ---
 
-## 3. 파일 I/O 최적화
+## 3. File I/O Optimization
 
-### 3.1 버퍼 크기 최적화
+### 3.1 Buffer Size Optimization
 
 ```csharp
-// 기본 버퍼 크기 (4KB)보다 큰 버퍼 사용
+// Use larger buffer than default (4KB)
 const int bufferSize = 64 * 1024; // 64KB
 
 using var fileStream = new FileStream(
@@ -89,10 +89,10 @@ using var fileStream = new FileStream(
     bufferSize: bufferSize);
 ```
 
-### 3.2 비동기 파일 I/O
+### 3.2 Async File I/O
 
 ```csharp
-// 비동기 옵션으로 파일 열기
+// Open file with async option
 using var fileStream = new FileStream(
     path,
     FileMode.Open,
@@ -105,10 +105,10 @@ var buffer = new byte[4096];
 int bytesRead = await fileStream.ReadAsync(buffer);
 ```
 
-### 3.3 SequentialScan 힌트
+### 3.3 SequentialScan Hint
 
 ```csharp
-// 순차 읽기 시 OS에 힌트 제공
+// Provide hint to OS for sequential reading
 using var fileStream = new FileStream(
     path,
     FileMode.Open,
@@ -121,7 +121,7 @@ using var fileStream = new FileStream(
 ### 3.4 RandomAccess (.NET 6+)
 
 ```csharp
-// 파일 위치 지정 없이 직접 오프셋 접근
+// Direct offset access without file position management
 using var handle = File.OpenHandle(path, FileMode.Open, FileAccess.Read);
 
 var buffer = new byte[4096];
@@ -129,15 +129,15 @@ long offset = 1000;
 
 int bytesRead = RandomAccess.Read(handle, buffer, offset);
 
-// 비동기 버전
+// Async version
 bytesRead = await RandomAccess.ReadAsync(handle, buffer, offset);
 ```
 
 ---
 
-## 4. 대용량 파일 처리
+## 4. Large File Processing
 
-### 4.1 청크 단위 읽기
+### 4.1 Chunk-Based Reading
 
 ```csharp
 public async IAsyncEnumerable<byte[]> ReadChunksAsync(
@@ -171,63 +171,63 @@ public async IAsyncEnumerable<byte[]> ReadChunksAsync(
 }
 ```
 
-### 4.2 메모리 매핑 파일
+### 4.2 Memory-Mapped Files
 
 ```csharp
 using System.IO.MemoryMappedFiles;
 
-// 대용량 파일을 메모리에 매핑
+// Map large file to memory
 using var mmf = MemoryMappedFile.CreateFromFile(path, FileMode.Open);
 using var accessor = mmf.CreateViewAccessor();
 
-// 직접 메모리 접근
+// Direct memory access
 byte value = accessor.ReadByte(position);
 accessor.Write(position, newValue);
 ```
 
 ---
 
-## 5. 성능 비교
+## 5. Performance Comparison
 
-| 방식 | 상대 성능 | 용도 |
-|------|----------|------|
-| Console.ReadLine() | 1x (기준) | 일반 |
-| StreamReader (기본 버퍼) | 2x | 대용량 |
-| StreamReader (64KB 버퍼) | 3-5x | 대용량 |
-| MemoryMappedFile | 5-10x | 초대용량 |
+| Method | Relative Performance | Use Case |
+|--------|---------------------|----------|
+| Console.ReadLine() | 1x (baseline) | General |
+| StreamReader (default buffer) | 2x | Large data |
+| StreamReader (64KB buffer) | 3-5x | Large data |
+| MemoryMappedFile | 5-10x | Very large data |
 
 ---
 
-## 6. 주의사항
+## 6. Important Notes
 
-### ⚠️ 버퍼 크기
+### Buffer Size
 
-- 너무 작으면 시스템 콜 증가
-- 너무 크면 메모리 낭비
-- 권장: 4KB ~ 64KB
+- Too small increases system calls
+- Too large wastes memory
+- Recommended: 4KB ~ 64KB
 
-### ⚠️ Encoding 지정
+### Encoding Specification
 
 ```csharp
-// UTF-8 BOM 없이 읽기
+// Read UTF-8 without BOM
 using var reader = new StreamReader(
     stream,
     new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
 ```
 
-### ⚠️ Flush 타이밍
+### Flush Timing
 
 ```csharp
-// AutoFlush = false로 성능 향상
+// Improve performance with AutoFlush = false
 writer.AutoFlush = false;
 
-// 중요 데이터 후 수동 Flush
+// Manual flush after important data
 writer.Flush();
 ```
 
 ---
 
-## 7. 참고 문서
+## 7. References
 
 - [File and Stream I/O](https://learn.microsoft.com/en-us/dotnet/standard/io/)
 - [Memory-Mapped Files](https://learn.microsoft.com/en-us/dotnet/standard/io/memory-mapped-files)

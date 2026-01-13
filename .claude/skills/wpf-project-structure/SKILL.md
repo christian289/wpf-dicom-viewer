@@ -3,24 +3,24 @@ name: wpf-project-structure
 description: "WPF 솔루션 및 프로젝트 구조 설계 가이드 (Clean Architecture 기반)"
 ---
 
-# WPF 솔루션 및 프로젝트 구조
+# WPF Solution and Project Structure
 
-Clean Architecture 기반 WPF 프로젝트의 솔루션 및 프로젝트 구조 설계 가이드입니다.
+A guide for designing WPF project solution and project structure based on Clean Architecture.
 
-## 템플릿 프로젝트
+## Template Project
 
-templates 폴더에 .NET 9 기반 Clean Architecture WPF 솔루션 예제가 포함되어 있습니다.
+The templates folder contains a .NET 9 Clean Architecture WPF solution example.
 
 ```
 templates/
-├── GameDataTool.sln                    ← 솔루션 파일
-├── Directory.Build.props               ← 공통 빌드 설정
+├── GameDataTool.sln                    ← Solution file
+├── Directory.Build.props               ← Common build settings
 ├── src/
-│   ├── GameDataTool.Domain/            ← 🔵 Core - 순수 도메인 모델
+│   ├── GameDataTool.Domain/            ← 🔵 Core - Pure domain models
 │   ├── GameDataTool.Application/       ← 🟢 Core - Use Cases
-│   ├── GameDataTool.Infrastructure/    ← 🟡 Infrastructure - 외부 시스템
+│   ├── GameDataTool.Infrastructure/    ← 🟡 Infrastructure - External systems
 │   ├── GameDataTool.ViewModels/        ← 🟠 Presentation - ViewModel
-│   ├── GameDataTool.WpfServices/       ← 🟠 Presentation - WPF 서비스
+│   ├── GameDataTool.WpfServices/       ← 🟠 Presentation - WPF services
 │   ├── GameDataTool.UI/                ← 🔴 Presentation - Custom Controls
 │   └── GameDataTool.WpfApp/            ← 🔴 Composition Root
 └── tests/
@@ -29,48 +29,48 @@ templates/
     └── GameDataTool.ViewModels.Tests/
 ```
 
-## 솔루션 구조 원칙
+## Solution Structure Principles
 
-**솔루션 이름은 애플리케이션 이름**
-- 예시: `GameDataTool` 솔루션 = 실행 가능한 .NET Assembly 이름
+**Solution name is the application name**
+- Example: `GameDataTool` solution = executable .NET Assembly name
 
-## 프로젝트 구조 (Clean Architecture)
+## Project Structure (Clean Architecture)
 
 ```
 SolutionName/
 ├── src/
 │   │
-│   │  ══════════════ Core (의존성 없음) ══════════════
+│   │  ══════════════ Core (No Dependencies) ══════════════
 │   │
-│   ├── SolutionName.Domain              // 🔵 Entities - 순수 도메인 모델
+│   ├── SolutionName.Domain              // 🔵 Entities - Pure domain models
 │   │   ├── Entities/
 │   │   ├── ValueObjects/
-│   │   └── Interfaces/                  //    - 도메인 서비스 인터페이스만
+│   │   └── Interfaces/                  //    - Domain service interfaces only
 │   │
-│   ├── SolutionName.Application         // 🟢 Use Cases - 비즈니스 로직 조율
-│   │   ├── Interfaces/                  //    - IRepository, IExternalService 등
-│   │   ├── Services/                    //    - 애플리케이션 서비스
+│   ├── SolutionName.Application         // 🟢 Use Cases - Business logic coordination
+│   │   ├── Interfaces/                  //    - IRepository, IExternalService, etc.
+│   │   ├── Services/                    //    - Application services
 │   │   └── DTOs/
 │   │
 │   │  ══════════════ Infrastructure ══════════════
 │   │
-│   ├── SolutionName.Infrastructure      // 🟡 외부 시스템 구현
-│   │   ├── Persistence/                 //    - 데이터 접근 구현
-│   │   ├── FileSystem/                  //    - 파일 시스템 접근
-│   │   └── ExternalServices/            //    - HTTP, API 등
+│   ├── SolutionName.Infrastructure      // 🟡 External system implementation
+│   │   ├── Persistence/                 //    - Data access implementation
+│   │   ├── FileSystem/                  //    - File system access
+│   │   └── ExternalServices/            //    - HTTP, API, etc.
 │   │
 │   │  ══════════════ Presentation (WPF) ══════════════
 │   │
-│   ├── SolutionName.ViewModels          // 🟠 ViewModels (Interface Adapter 역할)
-│   │   └── (Application에만 의존)
+│   ├── SolutionName.ViewModels          // 🟠 ViewModels (Interface Adapter role)
+│   │   └── (Depends on Application only)
 │   │
-│   ├── SolutionName.WpfServices         // 🟠 WPF 전용 서비스
-│   │   └── (Dialog, Navigation 등)
+│   ├── SolutionName.WpfServices         // 🟠 WPF-specific services
+│   │   └── (Dialog, Navigation, etc.)
 │   │
 │   ├── SolutionName.UI                  // 🔴 Custom Controls & Styles
 │   │
-│   └── SolutionName.WpfApp              // 🔴 Composition Root (진입점)
-│       └── App.xaml.cs                  //    - DI 설정, 모든 구현체 연결
+│   └── SolutionName.WpfApp              // 🔴 Composition Root (Entry point)
+│       └── App.xaml.cs                  //    - DI setup, connect all implementations
 │
 └── tests/
     ├── SolutionName.Domain.Tests
@@ -78,63 +78,63 @@ SolutionName/
     └── SolutionName.ViewModels.Tests
 ```
 
-## 프로젝트 타입별 역할
+## Roles by Project Type
 
-### Core Layer (의존성 없음)
+### Core Layer (No Dependencies)
 
-| 프로젝트 | 역할 | 포함 내용 |
+| Project | Role | Contents |
 |---------|------|----------|
-| `.Domain` | 🔵 Entities | 순수 도메인 모델, ValueObjects, 도메인 인터페이스 |
-| `.Application` | 🟢 Use Cases | 비즈니스 로직 조율, IRepository/IService 인터페이스, DTOs |
+| `.Domain` | 🔵 Entities | Pure domain models, ValueObjects, domain interfaces |
+| `.Application` | 🟢 Use Cases | Business logic coordination, IRepository/IService interfaces, DTOs |
 
 ### Infrastructure Layer
 
-| 프로젝트 | 역할 | 포함 내용 |
+| Project | Role | Contents |
 |---------|------|----------|
-| `.Infrastructure` | 🟡 외부 시스템 | Repository 구현, 파일 시스템, HTTP/API 클라이언트 |
+| `.Infrastructure` | 🟡 External Systems | Repository implementation, file system, HTTP/API clients |
 
 ### Presentation Layer (WPF)
 
-| 프로젝트 | 역할 | 포함 내용 |
+| Project | Role | Contents |
 |---------|------|----------|
-| `.ViewModels` | 🟠 Interface Adapter | MVVM ViewModel (Application에만 의존, WPF 참조 X) |
-| `.WpfServices` | 🟠 WPF 서비스 | DialogService, NavigationService, WindowService |
+| `.ViewModels` | 🟠 Interface Adapter | MVVM ViewModel (depends on Application only, no WPF reference) |
+| `.WpfServices` | 🟠 WPF Services | DialogService, NavigationService, WindowService |
 | `.UI` | 🔴 Custom Controls | ResourceDictionary, CustomControl, Themes |
-| `.WpfApp` | 🔴 Composition Root | App.xaml, DI 설정, Views, 진입점 |
+| `.WpfApp` | 🔴 Composition Root | App.xaml, DI setup, Views, entry point |
 
-## 프로젝트 의존성 계층
+## Project Dependency Hierarchy
 
 ```
                     ┌─────────────────────────────────────┐
                     │         SolutionName.WpfApp         │  ← Composition Root
-                    │      (모든 프로젝트 참조, DI 설정)      │
+                    │   (References all projects, DI setup)   │
                     └─────────────────────────────────────┘
                                       │
           ┌───────────────────────────┼───────────────────────────┐
           ▼                           ▼                           ▼
 ┌─────────────────┐       ┌─────────────────────┐       ┌─────────────────┐
 │  .ViewModels    │       │   .Infrastructure   │       │  .WpfServices   │
-│  (Application   │       │   (Application 참조) │       │  (Application   │
-│     참조)        │       │                     │       │     참조)        │
+│  (Application   │       │ (Application ref)   │       │  (Application   │
+│     ref)        │       │                     │       │     ref)        │
 └────────┬────────┘       └──────────┬──────────┘       └────────┬────────┘
          │                           │                           │
          └───────────────────────────┼───────────────────────────┘
                                      ▼
                     ┌─────────────────────────────────────┐
                     │       SolutionName.Application      │  ← Use Cases
-                    │         (Domain만 참조)              │
+                    │         (Domain ref only)           │
                     └─────────────────────────────────────┘
                                       │
                                       ▼
                     ┌─────────────────────────────────────┐
-                    │         SolutionName.Domain         │  ← Core (의존성 없음)
-                    │           (참조 없음)                │
+                    │         SolutionName.Domain         │  ← Core (No dependencies)
+                    │           (No references)           │
                     └─────────────────────────────────────┘
 ```
 
-## 각 레이어 상세 설명
+## Detailed Layer Descriptions
 
-### Domain Layer (순수 도메인)
+### Domain Layer (Pure Domain)
 
 ```csharp
 // Domain/Entities/User.cs
@@ -148,11 +148,9 @@ public sealed class User
 
     public void UpdateName(string name)
     {
-        // 도메인 비즈니스 규칙 검증
         // Domain business rule validation
         if (string.IsNullOrWhiteSpace(name))
-            throw new DomainException("이름은 필수입니다.");
-            // Name is required.
+            throw new DomainException("Name is required.");
 
         Name = name;
     }
@@ -170,8 +168,7 @@ public sealed record Email
     public Email(string value)
     {
         if (!IsValid(value))
-            throw new DomainException("유효하지 않은 이메일 형식입니다.");
-            // Invalid email format.
+            throw new DomainException("Invalid email format.");
 
         Value = value;
     }
@@ -213,8 +210,7 @@ public sealed class UserService(IUserRepository userRepository)
     public async Task UpdateUserNameAsync(Guid id, string newName, CancellationToken cancellationToken = default)
     {
         var user = await _userRepository.GetByIdAsync(id, cancellationToken)
-            ?? throw new NotFoundException("사용자를 찾을 수 없습니다.");
-            // User not found.
+            ?? throw new NotFoundException("User not found.");
 
         user.UpdateName(newName);
         await _userRepository.UpdateAsync(user, cancellationToken);
@@ -229,7 +225,7 @@ namespace GameDataTool.Application.DTOs;
 public sealed record UserDto(Guid Id, string Name, string Email);
 ```
 
-### Infrastructure Layer (외부 시스템 구현)
+### Infrastructure Layer (External System Implementation)
 
 ```csharp
 // Infrastructure/Persistence/UserRepository.cs
@@ -259,7 +255,7 @@ public sealed class UserRepository(AppDbContext dbContext) : IUserRepository
 }
 ```
 
-### ViewModels Layer (Presentation - Application만 의존)
+### ViewModels Layer (Presentation - Depends on Application Only)
 
 ```csharp
 // ViewModels/UserViewModel.cs
@@ -284,7 +280,7 @@ public sealed partial class UserViewModel(UserService userService) : ObservableO
 }
 ```
 
-### WpfApp Layer (Composition Root - DI 설정)
+### WpfApp Layer (Composition Root - DI Setup)
 
 ```csharp
 // WpfApp/App.xaml.cs
@@ -299,7 +295,6 @@ public partial class App : Application
         _host = Host.CreateDefaultBuilder()
             .ConfigureServices((context, services) =>
             {
-                // Domain - 등록 불필요 (순수 모델)
                 // Domain - No registration needed (pure models)
 
                 // Application Layer
@@ -341,7 +336,7 @@ public partial class App : Application
 }
 ```
 
-## 실제 폴더 구조 예시
+## Actual Folder Structure Example
 
 ```
 GameDataTool/
@@ -443,32 +438,33 @@ GameDataTool/
 └── Directory.Build.props
 ```
 
-## 참조 어셈블리 규칙
+## Assembly Reference Rules
 
-### Domain 프로젝트
-- ❌ 어떤 프로젝트도 참조하지 않음
-- ✅ 순수 C# BCL만 사용
+### Domain Project
+- ❌ Does not reference any project
+- ✅ Uses pure C# BCL only
 
-### Application 프로젝트
-- ✅ Domain만 참조
-- ❌ Infrastructure, Presentation 참조 금지
+### Application Project
+- ✅ References Domain only
+- ❌ Cannot reference Infrastructure, Presentation
 
-### Infrastructure 프로젝트
-- ✅ Domain, Application 참조
-- ✅ 외부 NuGet 패키지 사용 가능 (EF Core, HttpClient 등)
+### Infrastructure Project
+- ✅ References Domain, Application
+- ✅ Can use external NuGet packages (EF Core, HttpClient, etc.)
 
-### ViewModels 프로젝트
-- ✅ Application만 참조
-- ❌ WPF 어셈블리 참조 금지 (WindowsBase, PresentationFramework 등)
-- ✅ CommunityToolkit.Mvvm 사용 가능
+### ViewModels Project
+- ✅ References Application only
+- ❌ Cannot reference WPF assemblies (WindowsBase, PresentationFramework, etc.)
+- ✅ Can use CommunityToolkit.Mvvm
 
-### WpfApp 프로젝트 (Composition Root)
-- ✅ 모든 프로젝트 참조
-- ✅ DI 컨테이너에서 모든 구현체 연결
+### WpfApp Project (Composition Root)
+- ✅ References all projects
+- ✅ Connects all implementations in DI container
 
-## Clean Architecture 장점
+## Clean Architecture Advantages
 
-1. **독립성**: Core 레이어는 외부 프레임워크에 독립적
-2. **테스트 용이성**: 각 레이어를 독립적으로 테스트 가능
-3. **유지보수성**: 변경 영향 범위가 명확함
-4. **유연성**: Infrastructure 교체 용이 (DB, API 등)
+1. **Independence**: Core layer is independent from external frameworks
+2. **Testability**: Each layer can be tested independently
+3. **Maintainability**: Clear scope of change impact
+4. **Flexibility**: Easy to replace Infrastructure (DB, API, etc.)
+

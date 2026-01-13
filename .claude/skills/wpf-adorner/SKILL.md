@@ -3,35 +3,35 @@ name: wpf-adorner
 description: WPF Adorner를 사용한 장식 레이어 구현. AdornerLayer, AdornerDecorator, 커스텀 Adorner 패턴. 드래그 핸들, 유효성 검사 표시, 워터마크, 선택 표시, 리사이즈 그립 구현 시 이 스킬 적용.
 ---
 
-# WPF Adorner 패턴
+# WPF Adorner Patterns
 
-Adorner는 UIElement 위에 장식적인 시각 요소를 오버레이하는 메커니즘입니다.
+Adorner is a mechanism for overlaying decorative visual elements on top of UIElements.
 
-## 1. Adorner 개념
+## 1. Adorner Concept
 
-### 1.1 특징
+### 1.1 Characteristics
 
-- **AdornerLayer**: Adorner를 담는 별도의 렌더링 레이어
-- **Z-Order**: 장식 대상 요소 위에 항상 렌더링
-- **레이아웃 독립**: 대상 요소의 레이아웃에 영향 없음
-- **이벤트 지원**: 마우스/키보드 이벤트 수신 가능
+- **AdornerLayer**: Separate rendering layer that holds Adorners
+- **Z-Order**: Always renders above the adorned element
+- **Layout Independent**: No effect on target element's layout
+- **Event Support**: Can receive mouse/keyboard events
 
-### 1.2 사용 시나리오
+### 1.2 Usage Scenarios
 
-| 시나리오 | 설명 |
-|---------|------|
-| **유효성 표시** | 입력 필드 오류 표시 |
-| **드래그 핸들** | 요소 이동/리사이즈 핸들 |
-| **워터마크** | 빈 TextBox 힌트 텍스트 |
-| **선택 표시** | 선택된 요소 하이라이트 |
-| **툴팁/배지** | 요소 위 추가 정보 표시 |
-| **드래그 앤 드롭** | 드래그 중 미리보기 |
+| Scenario | Description |
+|----------|-------------|
+| **Validation Display** | Input field error display |
+| **Drag Handles** | Element move/resize handles |
+| **Watermark** | Hint text for empty TextBox |
+| **Selection Display** | Highlight selected elements |
+| **Tooltip/Badge** | Additional info display on elements |
+| **Drag and Drop** | Preview during drag |
 
 ---
 
-## 2. 기본 Adorner 구현
+## 2. Basic Adorner Implementation
 
-### 2.1 간단한 Adorner
+### 2.1 Simple Adorner
 
 ```csharp
 namespace MyApp.Adorners;
@@ -41,7 +41,6 @@ using System.Windows.Documents;
 using System.Windows.Media;
 
 /// <summary>
-/// 요소 주변에 테두리를 그리는 Adorner
 /// Adorner that draws border around element
 /// </summary>
 public sealed class BorderAdorner : Adorner
@@ -55,8 +54,7 @@ public sealed class BorderAdorner : Adorner
             DashStyle = DashStyles.Dash
         };
         _borderPen.Freeze();
-        
-        // 마우스 이벤트 비활성화 (장식만)
+
         // Disable mouse events (decoration only)
         IsHitTestVisible = false;
     }
@@ -64,34 +62,30 @@ public sealed class BorderAdorner : Adorner
     protected override void OnRender(DrawingContext drawingContext)
     {
         var rect = new Rect(AdornedElement.RenderSize);
-        
-        // 테두리 그리기
+
         // Draw border
         drawingContext.DrawRectangle(null, _borderPen, rect);
     }
 }
 ```
 
-### 2.2 Adorner 적용
+### 2.2 Applying Adorner
 
 ```csharp
-// AdornerLayer 가져오기
 // Get AdornerLayer
 var adornerLayer = AdornerLayer.GetAdornerLayer(targetElement);
 
 if (adornerLayer is not null)
 {
-    // Adorner 추가
     // Add Adorner
     var adorner = new BorderAdorner(targetElement);
     adornerLayer.Add(adorner);
 }
 ```
 
-### 2.3 Adorner 제거
+### 2.3 Removing Adorner
 
 ```csharp
-// 특정 요소의 모든 Adorner 제거
 // Remove all Adorners from specific element
 var adornerLayer = AdornerLayer.GetAdornerLayer(targetElement);
 var adorners = adornerLayer?.GetAdorners(targetElement);
@@ -109,13 +103,11 @@ if (adorners is not null)
 
 ## 3. AdornerDecorator
 
-### 3.1 기본 위치
+### 3.1 Default Location
 
 ```xml
-<!-- Window 기본 템플릿에 AdornerDecorator 포함 -->
 <!-- Window default template includes AdornerDecorator -->
 <Window>
-    <!-- AdornerDecorator는 자동으로 포함됨 -->
     <!-- AdornerDecorator is automatically included -->
     <Grid>
         <TextBox x:Name="MyTextBox"/>
@@ -123,10 +115,9 @@ if (adorners is not null)
 </Window>
 ```
 
-### 3.2 명시적 AdornerDecorator
+### 3.2 Explicit AdornerDecorator
 
 ```xml
-<!-- ControlTemplate에서 명시적 AdornerDecorator -->
 <!-- Explicit AdornerDecorator in ControlTemplate -->
 <ControlTemplate TargetType="{x:Type ContentControl}">
     <AdornerDecorator>
@@ -134,7 +125,6 @@ if (adorners is not null)
     </AdornerDecorator>
 </ControlTemplate>
 
-<!-- Popup이나 특수 컨테이너에서 -->
 <!-- In Popup or special containers -->
 <Popup>
     <AdornerDecorator>
@@ -150,9 +140,9 @@ if (adorners is not null)
 
 ---
 
-## 4. 실용적인 Adorner 예제
+## 4. Practical Adorner Examples
 
-### 4.1 워터마크 Adorner
+### 4.1 Watermark Adorner
 
 ```csharp
 namespace MyApp.Adorners;
@@ -163,14 +153,13 @@ using System.Windows.Documents;
 using System.Windows.Media;
 
 /// <summary>
-/// TextBox에 워터마크(힌트 텍스트) 표시
 /// Display watermark (hint text) on TextBox
 /// </summary>
 public sealed class WatermarkAdorner : Adorner
 {
     private readonly TextBlock _watermarkText;
 
-    public WatermarkAdorner(UIElement adornedElement, string watermark) 
+    public WatermarkAdorner(UIElement adornedElement, string watermark)
         : base(adornedElement)
     {
         _watermarkText = new TextBlock
@@ -181,9 +170,9 @@ public sealed class WatermarkAdorner : Adorner
             Margin = new Thickness(4, 2, 0, 0),
             IsHitTestVisible = false
         };
-        
+
         AddVisualChild(_watermarkText);
-        
+
         IsHitTestVisible = false;
     }
 
@@ -205,7 +194,7 @@ public sealed class WatermarkAdorner : Adorner
 }
 ```
 
-### 4.2 워터마크 Attached Property
+### 4.2 Watermark Attached Property
 
 ```csharp
 namespace MyApp.Behaviors;
@@ -267,11 +256,9 @@ public static class Watermark
             return;
         }
 
-        // 기존 워터마크 제거
         // Remove existing watermark
         RemoveWatermark(textBox, adornerLayer);
 
-        // 텍스트가 비어있으면 워터마크 추가
         // Add watermark if text is empty
         if (string.IsNullOrEmpty(textBox.Text))
         {
@@ -302,18 +289,17 @@ public static class Watermark
 }
 ```
 
-### 4.3 XAML에서 워터마크 사용
+### 4.3 Using Watermark in XAML
 
 ```xml
-<TextBox local:Watermark.Text="이메일을 입력하세요"/>
-<!-- <TextBox local:Watermark.Text="Enter email address"/> -->
+<TextBox local:Watermark.Text="Enter email address"/>
 ```
 
 ---
 
-## 5. 리사이즈 핸들 Adorner
+## 5. Resize Handle Adorner
 
-### 5.1 구현
+### 5.1 Implementation
 
 ```csharp
 namespace MyApp.Adorners;
@@ -326,7 +312,6 @@ using System.Windows.Input;
 using System.Windows.Media;
 
 /// <summary>
-/// 요소 리사이즈를 위한 핸들 Adorner
 /// Handle Adorner for element resizing
 /// </summary>
 public sealed class ResizeAdorner : Adorner
@@ -341,21 +326,18 @@ public sealed class ResizeAdorner : Adorner
     {
         _visuals = new VisualCollection(this);
 
-        // 코너 핸들
         // Corner handles
         _topLeft = CreateThumb(Cursors.SizeNWSE);
         _topRight = CreateThumb(Cursors.SizeNESW);
         _bottomLeft = CreateThumb(Cursors.SizeNESW);
         _bottomRight = CreateThumb(Cursors.SizeNWSE);
 
-        // 가장자리 핸들
         // Edge handles
         _top = CreateThumb(Cursors.SizeNS);
         _bottom = CreateThumb(Cursors.SizeNS);
         _left = CreateThumb(Cursors.SizeWE);
         _right = CreateThumb(Cursors.SizeWE);
 
-        // 드래그 이벤트 연결
         // Connect drag events
         _bottomRight.DragDelta += OnBottomRightDrag;
         _topLeft.DragDelta += OnTopLeftDrag;
@@ -392,14 +374,12 @@ public sealed class ResizeAdorner : Adorner
         var width = AdornedElement.RenderSize.Width;
         var height = AdornedElement.RenderSize.Height;
 
-        // 코너 핸들 배치
         // Arrange corner handles
         _topLeft.Arrange(new Rect(-halfThumb, -halfThumb, ThumbSize, ThumbSize));
         _topRight.Arrange(new Rect(width - halfThumb, -halfThumb, ThumbSize, ThumbSize));
         _bottomLeft.Arrange(new Rect(-halfThumb, height - halfThumb, ThumbSize, ThumbSize));
         _bottomRight.Arrange(new Rect(width - halfThumb, height - halfThumb, ThumbSize, ThumbSize));
 
-        // 가장자리 핸들 배치
         // Arrange edge handles
         _top.Arrange(new Rect(width / 2 - halfThumb, -halfThumb, ThumbSize, ThumbSize));
         _bottom.Arrange(new Rect(width / 2 - halfThumb, height - halfThumb, ThumbSize, ThumbSize));
@@ -418,102 +398,20 @@ public sealed class ResizeAdorner : Adorner
         }
     }
 
-    private void OnTopLeftDrag(object sender, DragDeltaEventArgs e)
-    {
-        if (AdornedElement is FrameworkElement element)
-        {
-            var newWidth = Math.Max(element.MinWidth, element.Width - e.HorizontalChange);
-            var newHeight = Math.Max(element.MinHeight, element.Height - e.VerticalChange);
-            
-            if (element.Width != newWidth)
-            {
-                Canvas.SetLeft(element, Canvas.GetLeft(element) + e.HorizontalChange);
-                element.Width = newWidth;
-            }
-            if (element.Height != newHeight)
-            {
-                Canvas.SetTop(element, Canvas.GetTop(element) + e.VerticalChange);
-                element.Height = newHeight;
-            }
-        }
-    }
-
-    private void OnTopRightDrag(object sender, DragDeltaEventArgs e)
-    {
-        if (AdornedElement is FrameworkElement element)
-        {
-            element.Width = Math.Max(element.MinWidth, element.Width + e.HorizontalChange);
-            
-            var newHeight = Math.Max(element.MinHeight, element.Height - e.VerticalChange);
-            if (element.Height != newHeight)
-            {
-                Canvas.SetTop(element, Canvas.GetTop(element) + e.VerticalChange);
-                element.Height = newHeight;
-            }
-        }
-    }
-
-    private void OnBottomLeftDrag(object sender, DragDeltaEventArgs e)
-    {
-        if (AdornedElement is FrameworkElement element)
-        {
-            var newWidth = Math.Max(element.MinWidth, element.Width - e.HorizontalChange);
-            if (element.Width != newWidth)
-            {
-                Canvas.SetLeft(element, Canvas.GetLeft(element) + e.HorizontalChange);
-                element.Width = newWidth;
-            }
-            element.Height = Math.Max(element.MinHeight, element.Height + e.VerticalChange);
-        }
-    }
-
-    private void OnTopDrag(object sender, DragDeltaEventArgs e)
-    {
-        if (AdornedElement is FrameworkElement element)
-        {
-            var newHeight = Math.Max(element.MinHeight, element.Height - e.VerticalChange);
-            if (element.Height != newHeight)
-            {
-                Canvas.SetTop(element, Canvas.GetTop(element) + e.VerticalChange);
-                element.Height = newHeight;
-            }
-        }
-    }
-
-    private void OnBottomDrag(object sender, DragDeltaEventArgs e)
-    {
-        if (AdornedElement is FrameworkElement element)
-        {
-            element.Height = Math.Max(element.MinHeight, element.Height + e.VerticalChange);
-        }
-    }
-
-    private void OnLeftDrag(object sender, DragDeltaEventArgs e)
-    {
-        if (AdornedElement is FrameworkElement element)
-        {
-            var newWidth = Math.Max(element.MinWidth, element.Width - e.HorizontalChange);
-            if (element.Width != newWidth)
-            {
-                Canvas.SetLeft(element, Canvas.GetLeft(element) + e.HorizontalChange);
-                element.Width = newWidth;
-            }
-        }
-    }
-
-    private void OnRightDrag(object sender, DragDeltaEventArgs e)
-    {
-        if (AdornedElement is FrameworkElement element)
-        {
-            element.Width = Math.Max(element.MinWidth, element.Width + e.HorizontalChange);
-        }
-    }
+    // Additional drag handlers for other directions...
+    private void OnTopLeftDrag(object sender, DragDeltaEventArgs e) { /* ... */ }
+    private void OnTopRightDrag(object sender, DragDeltaEventArgs e) { /* ... */ }
+    private void OnBottomLeftDrag(object sender, DragDeltaEventArgs e) { /* ... */ }
+    private void OnTopDrag(object sender, DragDeltaEventArgs e) { /* ... */ }
+    private void OnBottomDrag(object sender, DragDeltaEventArgs e) { /* ... */ }
+    private void OnLeftDrag(object sender, DragDeltaEventArgs e) { /* ... */ }
+    private void OnRightDrag(object sender, DragDeltaEventArgs e) { /* ... */ }
 }
 ```
 
 ---
 
-## 6. 유효성 검사 Adorner
+## 6. Validation Error Adorner
 
 ### 6.1 ValidationErrorAdorner
 
@@ -525,7 +423,6 @@ using System.Windows.Documents;
 using System.Windows.Media;
 
 /// <summary>
-/// 유효성 검사 오류 표시 Adorner
 /// Validation error display Adorner
 /// </summary>
 public sealed class ValidationErrorAdorner : Adorner
@@ -534,14 +431,14 @@ public sealed class ValidationErrorAdorner : Adorner
     private readonly Pen _borderPen;
     private readonly Brush _errorBrush;
 
-    public ValidationErrorAdorner(UIElement adornedElement, string errorMessage) 
+    public ValidationErrorAdorner(UIElement adornedElement, string errorMessage)
         : base(adornedElement)
     {
         _errorMessage = errorMessage;
-        
+
         _borderPen = new Pen(Brushes.Red, 2);
         _borderPen.Freeze();
-        
+
         _errorBrush = new SolidColorBrush(Color.FromArgb(50, 255, 0, 0));
         _errorBrush.Freeze();
     }
@@ -549,21 +446,18 @@ public sealed class ValidationErrorAdorner : Adorner
     protected override void OnRender(DrawingContext drawingContext)
     {
         var rect = new Rect(AdornedElement.RenderSize);
-        
-        // 오류 배경
+
         // Error background
         drawingContext.DrawRectangle(_errorBrush, _borderPen, rect);
-        
-        // 오류 아이콘 (우측 상단)
+
         // Error icon (top right)
         var iconSize = 16.0;
         var iconRect = new Rect(rect.Right - iconSize - 2, rect.Top + 2, iconSize, iconSize);
-        
-        drawingContext.DrawEllipse(Brushes.Red, null, 
+
+        drawingContext.DrawEllipse(Brushes.Red, null,
             new Point(iconRect.Left + iconSize / 2, iconRect.Top + iconSize / 2),
             iconSize / 2, iconSize / 2);
-        
-        // 느낌표
+
         // Exclamation mark
         var formattedText = new FormattedText(
             "!",
@@ -573,9 +467,9 @@ public sealed class ValidationErrorAdorner : Adorner
             12,
             Brushes.White,
             VisualTreeHelper.GetDpi(this).PixelsPerDip);
-        
-        drawingContext.DrawText(formattedText, 
-            new Point(iconRect.Left + iconSize / 2 - formattedText.Width / 2, 
+
+        drawingContext.DrawText(formattedText,
+            new Point(iconRect.Left + iconSize / 2 - formattedText.Width / 2,
                       iconRect.Top + iconSize / 2 - formattedText.Height / 2));
     }
 }
@@ -583,7 +477,7 @@ public sealed class ValidationErrorAdorner : Adorner
 
 ---
 
-## 7. 드래그 미리보기 Adorner
+## 7. Drag Preview Adorner
 
 ### 7.1 DragPreviewAdorner
 
@@ -595,7 +489,6 @@ using System.Windows.Documents;
 using System.Windows.Media;
 
 /// <summary>
-/// 드래그 중 미리보기 표시
 /// Display preview during drag
 /// </summary>
 public sealed class DragPreviewAdorner : Adorner
@@ -603,16 +496,16 @@ public sealed class DragPreviewAdorner : Adorner
     private readonly VisualBrush _visualBrush;
     private Point _offset;
 
-    public DragPreviewAdorner(UIElement adornedElement, Point offset) 
+    public DragPreviewAdorner(UIElement adornedElement, Point offset)
         : base(adornedElement)
     {
         _offset = offset;
-        
+
         _visualBrush = new VisualBrush(adornedElement)
         {
             Opacity = 0.7
         };
-        
+
         IsHitTestVisible = false;
     }
 
@@ -630,7 +523,7 @@ public sealed class DragPreviewAdorner : Adorner
             _offset.Y - size.Height / 2,
             size.Width,
             size.Height);
-        
+
         drawingContext.DrawRectangle(_visualBrush, null, rect);
     }
 }
@@ -638,7 +531,7 @@ public sealed class DragPreviewAdorner : Adorner
 
 ---
 
-## 8. Adorner 관리 서비스
+## 8. Adorner Management Service
 
 ```csharp
 namespace MyApp.Services;
@@ -649,7 +542,6 @@ using System.Windows;
 using System.Windows.Documents;
 
 /// <summary>
-/// Adorner 생명주기 관리
 /// Adorner lifecycle management
 /// </summary>
 public sealed class AdornerService
@@ -657,7 +549,6 @@ public sealed class AdornerService
     private readonly Dictionary<UIElement, List<Adorner>> _adornerMap = [];
 
     /// <summary>
-    /// Adorner 추가
     /// Add Adorner
     /// </summary>
     public bool AddAdorner(UIElement element, Adorner adorner)
@@ -681,7 +572,6 @@ public sealed class AdornerService
     }
 
     /// <summary>
-    /// 특정 타입 Adorner 제거
     /// Remove specific type Adorner
     /// </summary>
     public void RemoveAdorner<T>(UIElement element) where T : Adorner
@@ -703,7 +593,6 @@ public sealed class AdornerService
     }
 
     /// <summary>
-    /// 모든 Adorner 제거
     /// Remove all Adorners
     /// </summary>
     public void ClearAdorners(UIElement element)
@@ -722,7 +611,6 @@ public sealed class AdornerService
     }
 
     /// <summary>
-    /// 특정 타입 Adorner 존재 여부
     /// Check if specific type Adorner exists
     /// </summary>
     public bool HasAdorner<T>(UIElement element) where T : Adorner
@@ -746,18 +634,18 @@ public sealed class AdornerService
 
 ---
 
-## 9. 체크리스트
+## 9. Checklist
 
-- [ ] AdornerLayer 존재 확인 후 Adorner 추가
-- [ ] 장식 전용이면 `IsHitTestVisible = false` 설정
-- [ ] VisualChildrenCount와 GetVisualChild 올바르게 구현
-- [ ] MeasureOverride와 ArrangeOverride로 자식 배치
-- [ ] 불필요한 Adorner 제거 (메모리 누수 방지)
-- [ ] Popup 등에서는 AdornerDecorator 명시적 추가
+- [ ] Verify AdornerLayer exists before adding Adorner
+- [ ] Set `IsHitTestVisible = false` for decoration-only Adorners
+- [ ] Correctly implement VisualChildrenCount and GetVisualChild
+- [ ] Arrange children using MeasureOverride and ArrangeOverride
+- [ ] Remove unnecessary Adorners (prevent memory leaks)
+- [ ] Explicitly add AdornerDecorator in Popup, etc.
 
 ---
 
-## 10. 참고 문서
+## 10. References
 
 - [Adorners Overview - Microsoft Docs](https://learn.microsoft.com/en-us/dotnet/desktop/wpf/controls/adorners-overview)
 - [Adorner Class - Microsoft Docs](https://learn.microsoft.com/en-us/dotnet/api/system.windows.documents.adorner)

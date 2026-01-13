@@ -3,53 +3,53 @@ name: wpf-slider-index-display
 description: 'WPF Slider에서 0-based 인덱스를 1-based로 사용자에게 표시하는 패턴'
 ---
 
-# WPF Slider 0-based Index 표시 패턴
+# WPF Slider 0-based Index Display Pattern
 
-## 문제 상황
+## Problem Scenario
 
-컬렉션의 인덱스를 슬라이더로 표시할 때, **내부적으로는 0-based 인덱스**를 사용하지만 **사용자에게는 1-based**로 표시해야 하는 경우가 많습니다.
+When displaying collection indices with a slider, **internally using 0-based index** but **displaying as 1-based to users** is a common requirement.
 
-### 증상
-- 120개 이미지가 있는데 "0 / 120" ~ "119 / 120"으로 표시됨
-- 사용자는 "1 / 120" ~ "120 / 120"을 기대함
-- 슬라이더를 끝까지 드래그해도 마지막 항목에 도달하지 못함
+### Symptoms
+- 120 images exist but displayed as "0 / 120" ~ "119 / 120"
+- Users expect "1 / 120" ~ "120 / 120"
+- Dragging slider to the end doesn't reach the last item
 
-### 원인
-- 슬라이더의 `Maximum`이 `TotalCount`로 설정되어 있으면 범위 초과
-- 0-based 인덱스를 그대로 화면에 표시하면 사용자에게 혼란
+### Cause
+- If slider's `Maximum` is set to `TotalCount`, it exceeds the valid range
+- Displaying 0-based index directly confuses users
 
 ---
 
-## 해결 방법
+## Solution
 
-### ViewModel에 표시용 속성 추가
+### Add Display Properties to ViewModel
 
 ```csharp
 public partial class ViewerViewModel : ObservableObject
 {
-    // 내부 인덱스 (0-based)
+    // Internal index (0-based)
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(SliceDisplayNumber))]
     private int _currentSliceIndex;
 
-    // 전체 개수
+    // Total count
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(MaxSliceIndex))]
     private int _totalSliceCount;
 
     /// <summary>
-    /// 슬라이더 Maximum 값 (0-based 인덱스 최대값)
+    /// Slider Maximum value (0-based index maximum)
     /// </summary>
     public int MaxSliceIndex => Math.Max(0, TotalSliceCount - 1);
 
     /// <summary>
-    /// 사용자 표시용 번호 (1-based)
+    /// User display number (1-based)
     /// </summary>
     public int SliceDisplayNumber => CurrentSliceIndex + 1;
 }
 ```
 
-### XAML 바인딩
+### XAML Binding
 
 ```xml
 <Grid>
@@ -59,17 +59,17 @@ public partial class ViewerViewModel : ObservableObject
         <ColumnDefinition Width="Auto" />
     </Grid.ColumnDefinitions>
 
-    <!-- 현재 번호 (1-based 표시) -->
+    <!-- Current number (1-based display) -->
     <TextBlock Grid.Column="0"
                Text="{Binding SliceDisplayNumber}" />
 
-    <!-- 슬라이더 (0-based 인덱스, Maximum은 Count-1) -->
+    <!-- Slider (0-based index, Maximum is Count-1) -->
     <Slider Grid.Column="1"
             Minimum="0"
             Maximum="{Binding MaxSliceIndex}"
             Value="{Binding CurrentSliceIndex}" />
 
-    <!-- 전체 개수 -->
+    <!-- Total count -->
     <TextBlock Grid.Column="2"
                Text="{Binding TotalSliceCount}" />
 </Grid>
@@ -77,28 +77,28 @@ public partial class ViewerViewModel : ObservableObject
 
 ---
 
-## 핵심 포인트
+## Key Points
 
-| 속성 | 값 범위 | 용도 |
-|------|---------|------|
-| `CurrentSliceIndex` | 0 ~ (Count-1) | 내부 로직, 슬라이더 Value |
-| `MaxSliceIndex` | Count-1 | 슬라이더 Maximum |
-| `SliceDisplayNumber` | 1 ~ Count | 사용자 표시 |
-| `TotalSliceCount` | Count | 전체 개수 표시 |
+| Property | Value Range | Purpose |
+|----------|-------------|---------|
+| `CurrentSliceIndex` | 0 ~ (Count-1) | Internal logic, Slider Value |
+| `MaxSliceIndex` | Count-1 | Slider Maximum |
+| `SliceDisplayNumber` | 1 ~ Count | User display |
+| `TotalSliceCount` | Count | Total count display |
 
 ---
 
-## NotifyPropertyChangedFor 사용
+## Using NotifyPropertyChangedFor
 
-`[NotifyPropertyChangedFor]` 어트리뷰트를 사용하면 소스 속성이 변경될 때 계산된 속성의 `PropertyChanged`도 자동으로 발생합니다.
+The `[NotifyPropertyChangedFor]` attribute automatically raises `PropertyChanged` for computed properties when the source property changes.
 
 ```csharp
-// CurrentSliceIndex가 변경되면 SliceDisplayNumber도 PropertyChanged 발생
+// When CurrentSliceIndex changes, SliceDisplayNumber also raises PropertyChanged
 [ObservableProperty]
 [NotifyPropertyChangedFor(nameof(SliceDisplayNumber))]
 private int _currentSliceIndex;
 
-// TotalSliceCount가 변경되면 MaxSliceIndex도 PropertyChanged 발생
+// When TotalSliceCount changes, MaxSliceIndex also raises PropertyChanged
 [ObservableProperty]
 [NotifyPropertyChangedFor(nameof(MaxSliceIndex))]
 private int _totalSliceCount;
@@ -106,9 +106,9 @@ private int _totalSliceCount;
 
 ---
 
-## 적용 예시
+## Application Examples
 
-- 이미지 뷰어의 슬라이스 네비게이션 (CT/MRI)
-- 페이지네이션 (문서 뷰어)
-- 미디어 플레이어의 트랙 목록
-- 갤러리의 이미지 인덱스
+- Image viewer slice navigation (CT/MRI)
+- Pagination (document viewer)
+- Media player track list
+- Gallery image index

@@ -3,16 +3,16 @@ name: dotnet-pipelines-lite
 description: 'System.IO.Pipelines 핵심 패턴'
 ---
 
-# Pipelines 핵심
+# Pipelines Essentials
 
-## 1. 기본 패턴
+## 1. Basic Pattern
 
 ```csharp
 using System.IO.Pipelines;
 
 var pipe = new Pipe();
 
-// Writer와 Reader 동시 실행
+// Run Writer and Reader concurrently
 await Task.WhenAll(
     FillPipeAsync(stream, pipe.Writer),
     ReadPipeAsync(pipe.Reader)
@@ -57,9 +57,9 @@ private async Task ReadPipeAsync(PipeReader reader)
 }
 ```
 
-## 4. 주의사항
+## 4. Important Notes
 
-- ⚠️ ReadAsync 후 반드시 AdvanceTo 호출
-- ⚠️ Writer/Reader 모두 CompleteAsync 호출 필수
+- Must call AdvanceTo after ReadAsync
+- Must call CompleteAsync for both Writer and Reader
 
-> 상세 내용: `/dotnet-pipelines` skill 참조
+> For details: See `/dotnet-pipelines` skill

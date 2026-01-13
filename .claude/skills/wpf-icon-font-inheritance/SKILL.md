@@ -3,27 +3,27 @@ name: wpf-icon-font-inheritance
 description: 'WPF CustomControl에서 Segoe Fluent Icons 사용 시 텍스트 폰트 상속 문제 해결'
 ---
 
-# WPF CustomControl Icon Font 상속 문제 해결
+# WPF CustomControl Icon Font Inheritance Issue Resolution
 
-## 문제 상황
+## Problem Scenario
 
-WPF CustomControl에서 Segoe Fluent Icons 폰트를 사용할 때, 같은 ControlTemplate 내의 **TextBlock이 아이콘 폰트를 상속받아 텍스트가 깨지는 문제**가 발생합니다.
+When using Segoe Fluent Icons font in WPF CustomControl, **TextBlocks within the same ControlTemplate inherit the icon font, causing text to render incorrectly**.
 
-### 증상
-- 버튼의 텍스트가 네모 박스(□)나 이상한 기호로 표시됨
-- 아이콘은 정상적으로 표시되지만 일반 텍스트가 렌더링되지 않음
+### Symptoms
+- Button text displays as square boxes (□) or strange symbols
+- Icons display correctly but regular text doesn't render
 
-### 원인
-WPF의 `FontFamily`는 Visual Tree를 따라 자식 요소에 상속됩니다. ControlTemplate 내에서 아이콘용 TextBlock에 `FontFamily="Segoe Fluent Icons"`를 설정하면, 같은 컨테이너 내의 다른 TextBlock도 이 폰트를 상속받을 수 있습니다.
+### Cause
+WPF's `FontFamily` is inherited to child elements following the Visual Tree. When `FontFamily="Segoe Fluent Icons"` is set on a TextBlock for icons within a ControlTemplate, other TextBlocks in the same container may inherit this font.
 
 ---
 
-## 해결 방법
+## Solution
 
-### 텍스트 표시용 요소에 명시적 FontFamily 지정
+### Explicitly Specify FontFamily on Text-Displaying Elements
 
 ```xml
-<!-- IconButton ControlTemplate 예시 -->
+<!-- IconButton ControlTemplate Example -->
 <ControlTemplate TargetType="{x:Type local:IconButton}">
     <Border Background="{TemplateBinding Background}"
             BorderBrush="{TemplateBinding BorderBrush}"
@@ -32,14 +32,14 @@ WPF의 `FontFamily`는 Visual Tree를 따라 자식 요소에 상속됩니다. C
                     HorizontalAlignment="Center"
                     VerticalAlignment="Center">
 
-            <!-- 아이콘: Segoe Fluent Icons 사용 -->
+            <!-- Icon: Use Segoe Fluent Icons -->
             <TextBlock x:Name="PART_Icon"
                        Text="{TemplateBinding Icon}"
                        FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
                        FontSize="{TemplateBinding IconSize}"
                        Foreground="{TemplateBinding Foreground}" />
 
-            <!-- 텍스트: 명시적으로 Segoe UI 지정 (중요!) -->
+            <!-- Text: Explicitly specify Segoe UI (Important!) -->
             <TextBlock x:Name="PART_Text"
                        Text="{TemplateBinding Text}"
                        FontFamily="Segoe UI"
@@ -53,32 +53,32 @@ WPF의 `FontFamily`는 Visual Tree를 따라 자식 요소에 상속됩니다. C
 
 ---
 
-## 핵심 포인트
+## Key Points
 
-1. **아이콘 폰트는 해당 요소에만 적용**: `PART_Icon`에만 `Segoe Fluent Icons` 지정
-2. **텍스트 요소에 명시적 FontFamily 지정**: `PART_Text`에 `FontFamily="Segoe UI"` 필수
-3. **상위 컨테이너에 FontFamily 지정 금지**: Border나 StackPanel에 FontFamily를 지정하면 모든 자식에 상속됨
-
----
-
-## 적용 대상
-
-- IconButton (아이콘 + 텍스트 버튼)
-- IconToggleButton (토글 가능한 아이콘 버튼)
-- NavigationButton (네비게이션 메뉴 아이템)
-- 기타 아이콘과 텍스트를 함께 사용하는 모든 CustomControl
+1. **Apply icon font only to specific element**: Specify `Segoe Fluent Icons` only on `PART_Icon`
+2. **Explicitly specify FontFamily on text elements**: `FontFamily="Segoe UI"` is required on `PART_Text`
+3. **Don't set FontFamily on parent containers**: Setting FontFamily on Border or StackPanel inherits to all children
 
 ---
 
-## 관련 아이콘 폰트
+## Applicable Controls
 
-| 폰트 이름 | Windows 버전 | 용도 |
-|-----------|-------------|------|
-| `Segoe Fluent Icons` | Windows 11+ | 최신 Fluent Design 아이콘 |
-| `Segoe MDL2 Assets` | Windows 10+ | 기본 시스템 아이콘 |
+- IconButton (icon + text button)
+- IconToggleButton (toggleable icon button)
+- NavigationButton (navigation menu item)
+- Any other CustomControl using icons and text together
 
-### Fallback 패턴
+---
+
+## Related Icon Fonts
+
+| Font Name | Windows Version | Purpose |
+|-----------|-----------------|---------|
+| `Segoe Fluent Icons` | Windows 11+ | Latest Fluent Design icons |
+| `Segoe MDL2 Assets` | Windows 10+ | Default system icons |
+
+### Fallback Pattern
 ```xml
 FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
 ```
-Windows 10에서도 호환되도록 fallback 폰트 지정
+Specify fallback font for Windows 10 compatibility

@@ -3,21 +3,21 @@ name: avalonia-collectionview
 description: "AvaloniaUI에서 CollectionView 대안 (DataGridCollectionView, ReactiveUI)"
 ---
 
-# 6.7 CollectionView를 사용한 MVVM 패턴
+# 6.7 MVVM Pattern with CollectionView
 
-**⚠️ 중요: AvaloniaUI는 WPF의 CollectionViewSource를 지원하지 않습니다.**
+**⚠️ Important: AvaloniaUI does not support WPF's CollectionViewSource.**
 
-## 프로젝트 구조
+## Project Structure
 
-templates 폴더에 .NET 9 AvaloniaUI 프로젝트 예제가 포함되어 있습니다.
+The templates folder contains a .NET 9 AvaloniaUI project example.
 
 ```
 templates/
-├── AvaloniaCollectionViewSample.Core/           ← 순수 C# 모델 및 인터페이스
+├── AvaloniaCollectionViewSample.Core/           ← Pure C# models and interfaces
 │   ├── Member.cs
 │   ├── IMemberCollectionService.cs
 │   └── AvaloniaCollectionViewSample.Core.csproj
-├── AvaloniaCollectionViewSample.ViewModels/     ← ViewModel (Avalonia 참조 없음)
+├── AvaloniaCollectionViewSample.ViewModels/     ← ViewModel (no Avalonia references)
 │   ├── MainViewModel.cs
 │   ├── GlobalUsings.cs
 │   └── AvaloniaCollectionViewSample.ViewModels.csproj
@@ -36,9 +36,9 @@ templates/
     └── AvaloniaCollectionViewSample.App.csproj
 ```
 
-AvaloniaUI에서는 다음 방법들을 사용:
+In AvaloniaUI, use the following approaches:
 
-#### 6.7.1 DataGridCollectionView 사용 (권장)
+#### 6.7.1 Using DataGridCollectionView (Recommended)
 
 ```csharp
 // NuGet: Avalonia.Controls.DataGrid
@@ -51,7 +51,6 @@ public sealed class MemberCollectionService
 {
     private ObservableCollection<Member> Source { get; } = [];
 
-    // DataGridCollectionView 반환
     // Returns DataGridCollectionView
     public IEnumerable CreateView(Predicate<Member>? filter = null)
     {
@@ -71,7 +70,7 @@ public sealed class MemberCollectionService
 }
 ```
 
-#### 6.7.2 ReactiveUI 사용 (대안)
+#### 6.7.2 Using ReactiveUI (Alternative)
 
 ```csharp
 // NuGet: ReactiveUI.Avalonia
@@ -91,10 +90,8 @@ public sealed class MainViewModel : ReactiveObject
     {
         _sourceList
             .Connect()
-            .Filter(m => m.IsActive) // 필터링
-                                     // Filtering
-            .Sort(SortExpressionComparer<Member>.Ascending(m => m.Name)) // 정렬
-                                                                          // Sorting
+            .Filter(m => m.IsActive) // Filtering
+            .Sort(SortExpressionComparer<Member>.Ascending(m => m.Name)) // Sorting
             .Bind(out _members)
             .Subscribe();
     }

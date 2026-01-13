@@ -5,75 +5,75 @@ description: WPF 컨트롤 제작 결정 가이드. Control 생성 여부 판단
 
 # WPF Control Authoring Guide
 
-WPF 컨트롤 제작 시 의사결정을 위한 가이드.
+A guide for decision-making when authoring WPF controls.
 
-## 1. 새 컨트롤이 필요한가?
+## 1. Do You Need a New Control?
 
-**먼저 대안을 검토하라.** WPF의 확장성 덕분에 새 컨트롤 없이도 대부분 해결 가능하다.
+**Review alternatives first.** Thanks to WPF's extensibility, most requirements can be solved without creating a new control.
 
-| 요구사항              | 대안            | 예시                                 |
-| --------------------- | --------------- | ------------------------------------ |
-| 외관만 변경           | Style           | TextBlock을 빨간색 Arial 14pt로 통일 |
-| 컨트롤 구조 변경      | ControlTemplate | RadioButton을 신호등 모양으로        |
-| 데이터 표시 방식 변경 | DataTemplate    | ListBox 항목에 체크박스 추가         |
-| 상태별 동작 변경      | Trigger         | 선택된 항목을 굵은 빨간색으로        |
-| 복합 콘텐츠 표시      | Rich Content    | Button에 이미지+텍스트 함께 표시     |
+| Requirement | Alternative | Example |
+|-------------|-------------|---------|
+| Change appearance only | Style | Unify TextBlock to red Arial 14pt |
+| Change control structure | ControlTemplate | Make RadioButton look like traffic light |
+| Change data display method | DataTemplate | Add checkbox to ListBox items |
+| Change state-based behavior | Trigger | Make selected item bold red |
+| Display composite content | Rich Content | Show image+text together in Button |
 
-**새 컨트롤이 필요한 경우:**
+**When a new control is needed:**
 
-- 기존 컨트롤에 없는 새로운 기능/동작
-- 재사용 가능한 복합 컴포넌트
-- 특수한 입력/상호작용 패턴
+- New functionality/behavior not available in existing controls
+- Reusable composite components
+- Special input/interaction patterns
 
 ---
 
-## 2. 베이스 클래스 선택
+## 2. Base Class Selection
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    컨트롤 유형 결정                           │
+│                    Control Type Decision                    │
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
 │  ┌─────────────┐    ┌─────────────┐    ┌─────────────────┐  │
 │  │ UserControl │    │   Control   │    │ FrameworkElement│  │
 │  └──────┬──────┘    └──────┬──────┘    └────────┬────────┘  │
 │         │                  │                    │           │
-│  기존 컨트롤 조합     ControlTemplate     직접 렌더링        │
-│  빠른 개발           커스터마이징 지원    완전한 제어         │
-│  템플릿 불가         테마 지원            성능 최적화         │
-│                                                             │
+│  Combine existing    ControlTemplate      Direct rendering  │
+│  Quick development   Customization        Full control      │
+│  No template         Theme support        Performance       │
+│                                           optimization      │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### UserControl 선택 조건
+### UserControl Selection Criteria
 
-- ✅ 기존 컨트롤 조합으로 충분
-- ✅ 애플리케이션과 유사한 개발 방식 선호
-- ✅ ControlTemplate 커스터마이징 불필요
-- ❌ 테마 지원 불필요
+- ✅ Combining existing controls is sufficient
+- ✅ Prefer application-like development approach
+- ✅ ControlTemplate customization not needed
+- ❌ Theme support not needed
 
-### Control 선택 조건 (권장)
+### Control Selection Criteria (Recommended)
 
-- ✅ ControlTemplate으로 외관 커스터마이징 필요
-- ✅ 다양한 테마 지원 필요
-- ✅ WPF 기본 컨트롤 수준의 확장성 필요
-- ✅ UI와 로직의 완전한 분리
+- ✅ Need appearance customization via ControlTemplate
+- ✅ Need various theme support
+- ✅ Need WPF built-in control level extensibility
+- ✅ Complete separation of UI and logic
 
-### FrameworkElement 선택 조건
+### FrameworkElement Selection Criteria
 
-- ✅ 단순 요소 조합으로 불가능한 외관
-- ✅ OnRender로 직접 렌더링 필요
-- ✅ DrawingVisual 기반 커스텀 조합
-- ✅ 극한의 성능 최적화 필요
+- ✅ Appearance not achievable by simple element composition
+- ✅ Need direct rendering via OnRender
+- ✅ Custom composition based on DrawingVisual
+- ✅ Extreme performance optimization needed
 
 ---
 
-## 3. 스타일 가능한 컨트롤 설계 원칙
+## 3. Principles for Designing Stylable Controls
 
-### 3.1 Template Contract를 엄격히 강제하지 마라
+### 3.1 Don't Strictly Enforce Template Contract
 
 ```csharp
-// ❌ 잘못된 예: Part가 없으면 예외
+// ❌ Wrong: Throws exception if Part is missing
 public override void OnApplyTemplate()
 {
     var button = GetTemplateChild("PART_Button") as Button;
@@ -81,55 +81,55 @@ public override void OnApplyTemplate()
         throw new InvalidOperationException("PART_Button required!");
 }
 
-// ✅ 올바른 예: Part가 없어도 동작
+// ✅ Correct: Works even if Part is missing
 public override void OnApplyTemplate()
 {
     base.OnApplyTemplate();
     ButtonElement = GetTemplateChild("PART_Button") as Button;
-    // null이면 해당 기능만 비활성화, 컨트롤은 계속 동작
+    // If null, only that feature is disabled, control continues to work
 }
 ```
 
-**핵심 원칙:**
+**Core Principles:**
 
-- 디자인 타임에 ControlTemplate이 불완전할 수 있음
-- Panel은 자식이 너무 많거나 적어도 예외 발생시키지 않음
-- 필수 요소가 없으면 해당 기능만 비활성화
+- ControlTemplate may be incomplete at design time
+- Panel doesn't throw exceptions for too many or too few children
+- If required elements are missing, only disable that feature
 
-### 3.2 Helper Element 패턴
+### 3.2 Helper Element Patterns
 
-| 유형           | 설명                              | 예시                             |
-| -------------- | --------------------------------- | -------------------------------- |
-| **Standalone** | 독립적, 재사용 가능               | Popup, ScrollViewer, TabPanel    |
-| **Type-based** | TemplatedParent 인식, 자동 바인딩 | ContentPresenter, ItemsPresenter |
-| **Named**      | x:Name으로 코드에서 참조          | PART_TextBox, PART_Button        |
+| Type | Description | Example |
+|------|-------------|---------|
+| **Standalone** | Independent, reusable | Popup, ScrollViewer, TabPanel |
+| **Type-based** | Recognizes TemplatedParent, auto-binding | ContentPresenter, ItemsPresenter |
+| **Named** | Referenced in code via x:Name | PART_TextBox, PART_Button |
 
 ```csharp
-// Type-based: ContentPresenter는 자동으로 TemplatedParent.Content에 바인딩
+// Type-based: ContentPresenter automatically binds to TemplatedParent.Content
 <ContentPresenter />
 
-// Named: 코드에서 직접 참조 필요
+// Named: Direct reference needed in code
 <TextBox x:Name="PART_EditableTextBox" />
 ```
 
-### 3.3 상태/동작 표현 우선순위
+### 3.3 State/Behavior Expression Priority
 
-상위 항목일수록 우선 사용:
+Prefer higher items:
 
 1. **Property Binding** - `ComboBox.IsDropDownOpen` ↔ `ToggleButton.IsChecked`
-2. **Trigger/Animation** - Hover 상태에서 배경색 변경
+2. **Trigger/Animation** - Background color change on Hover state
 3. **Command** - `ScrollBar.LineUpCommand`
 4. **Standalone Helper** - `TabPanel` in `TabControl`
 5. **Type-based Helper** - `ContentPresenter` in `Button`
 6. **Named Helper** - `TextBox` in `ComboBox`
-7. **Bubbled Event** - Named 요소에서 버블링되는 이벤트
+7. **Bubbled Event** - Event bubbling from Named element
 8. **Custom OnRender** - `ButtonChrome` in `Button`
 
 ---
 
-## 4. DependencyProperty 구현
+## 4. DependencyProperty Implementation
 
-스타일, 바인딩, 애니메이션, 동적 리소스를 지원하려면 DependencyProperty 필수.
+DependencyProperty is required to support styles, bindings, animations, and dynamic resources.
 
 ```csharp
 public static readonly DependencyProperty ValueProperty =
@@ -148,8 +148,8 @@ public int Value
     set => SetValue(ValueProperty, value);
 }
 
-// ⚠️ CLR 래퍼에 로직 추가 금지! 바인딩 시 우회됨
-// 대신 콜백 사용:
+// ⚠️ Don't add logic to CLR wrapper! It's bypassed during binding
+// Use callbacks instead:
 private static void OnValueChanged(DependencyObject d,
     DependencyPropertyChangedEventArgs e) { }
 
@@ -159,9 +159,9 @@ private static object CoerceValue(DependencyObject d, object value)
 
 ---
 
-## 5. RoutedEvent 구현
+## 5. RoutedEvent Implementation
 
-버블링, EventSetter, EventTrigger 지원을 위해 RoutedEvent 사용.
+Use RoutedEvent to support bubbling, EventSetter, and EventTrigger.
 
 ```csharp
 public static readonly RoutedEvent ValueChangedEvent =
@@ -183,47 +183,47 @@ protected virtual void OnValueChanged(RoutedPropertyChangedEventArgs<int> e)
 
 ---
 
-## 6. 커스터마이징 지원 전략
+## 6. Customization Support Strategy
 
 ```
 ┌────────────────────────────────────────────────────────────┐
-│              커스터마이징 빈도별 노출 전략                    │
+│           Exposure Strategy by Customization Frequency     │
 ├────────────────────────────────────────────────────────────┤
 │                                                            │
-│  매우 빈번  →  DependencyProperty로 노출                   │
-│              (Background, Foreground 등)                   │
+│  Very Frequent  →  Expose as DependencyProperty            │
+│                    (Background, Foreground, etc.)          │
 │                                                            │
-│  가끔       →  Attached Property로 노출                    │
-│              (Grid.Row, Canvas.Left 등)                    │
+│  Sometimes      →  Expose as Attached Property             │
+│                    (Grid.Row, Canvas.Left, etc.)           │
 │                                                            │
-│  드물게    →  ControlTemplate 재정의 유도                   │
-│              (문서화 필수)                                  │
+│  Rarely         →  Guide to redefine ControlTemplate       │
+│                    (Documentation required)                │
 │                                                            │
 └────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 7. 테마 리소스 구성
+## 7. Theme Resource Organization
 
 ```
 📁 Themes/
-├── Generic.xaml          ← 기본 (필수)
+├── Generic.xaml          ← Default (required)
 ├── Aero.NormalColor.xaml ← Windows Vista/7
 ├── Luna.NormalColor.xaml ← Windows XP Blue
 ├── Luna.Homestead.xaml   ← Windows XP Olive
 └── Luna.Metallic.xaml    ← Windows XP Silver
 ```
 
-**AssemblyInfo.cs에 ThemeInfo 추가:**
+**Add ThemeInfo to AssemblyInfo.cs:**
 
 ```csharp
 [assembly: ThemeInfo(
-    ResourceDictionaryLocation.SourceAssembly,  // 테마별 리소스
-    ResourceDictionaryLocation.SourceAssembly)] // Generic 리소스
+    ResourceDictionaryLocation.SourceAssembly,  // Theme-specific resources
+    ResourceDictionaryLocation.SourceAssembly)] // Generic resources
 ```
 
-**정적 생성자에서 DefaultStyleKey 설정:**
+**Set DefaultStyleKey in static constructor:**
 
 ```csharp
 static NumericUpDown()
@@ -236,38 +236,38 @@ static NumericUpDown()
 
 ---
 
-## 의사결정 체크리스트
+## Decision Checklist
 
-### 새 컨트롤 생성 전
+### Before Creating a New Control
 
-- [ ] Style로 해결 가능한가?
-- [ ] ControlTemplate으로 해결 가능한가?
-- [ ] DataTemplate으로 해결 가능한가?
-- [ ] Trigger로 해결 가능한가?
-- [ ] Rich Content로 해결 가능한가?
+- [ ] Can it be solved with Style?
+- [ ] Can it be solved with ControlTemplate?
+- [ ] Can it be solved with DataTemplate?
+- [ ] Can it be solved with Trigger?
+- [ ] Can it be solved with Rich Content?
 
-### 베이스 클래스 선택
+### Base Class Selection
 
-- [ ] ControlTemplate 커스터마이징 필요? → Control
-- [ ] 테마 지원 필요? → Control
-- [ ] 기존 컨트롤 조합만으로 충분? → UserControl
-- [ ] 직접 렌더링 필요? → FrameworkElement
+- [ ] Need ControlTemplate customization? → Control
+- [ ] Need theme support? → Control
+- [ ] Combining existing controls is sufficient? → UserControl
+- [ ] Need direct rendering? → FrameworkElement
 
-### 컨트롤 설계
+### Control Design
 
-- [ ] Template Contract를 최소화했는가?
-- [ ] Part 누락 시에도 동작하는가?
-- [ ] 예외 대신 기능 비활성화로 처리하는가?
-- [ ] 상태 표현에 우선순위를 따랐는가?
+- [ ] Did you minimize Template Contract?
+- [ ] Does it work even if Part is missing?
+- [ ] Handling with feature disable instead of exception?
+- [ ] Did you follow state expression priority?
 
-### 속성/이벤트
+### Properties/Events
 
-- [ ] 스타일/바인딩 지원 속성은 DependencyProperty인가?
-- [ ] CLR 래퍼에 로직이 없는가?
-- [ ] 이벤트는 RoutedEvent로 구현했는가?
+- [ ] Are style/binding supporting properties DependencyProperty?
+- [ ] Is there no logic in CLR wrapper?
+- [ ] Are events implemented as RoutedEvent?
 
-### 테마/리소스
+### Theme/Resources
 
-- [ ] Generic.xaml에 기본 스타일이 있는가?
-- [ ] ThemeInfo 특성을 설정했는가?
-- [ ] DefaultStyleKey를 설정했는가?
+- [ ] Is there a default style in Generic.xaml?
+- [ ] Did you set ThemeInfo attribute?
+- [ ] Did you set DefaultStyleKey?

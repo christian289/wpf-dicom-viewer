@@ -38,7 +38,9 @@
       "Bash(xargs cat:*)",
       "Bash(git commit:*)",
       "Bash(ls:*)",
-      "Bash(python -m json.tool:*)"
+      "Bash(python -m json.tool:*)",
+      "Bash(find:*)",
+      "Bash(sort:*)"
     ]
   }
 }

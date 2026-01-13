@@ -3,28 +3,28 @@ name: wpf-animation
 description: WPF 애니메이션 시스템. Storyboard, Timeline, EasingFunction 패턴. DoubleAnimation, ColorAnimation, ObjectAnimationUsingKeyFrames 활용. UI 전환, 상태 변화 시각화, 인터랙티브 피드백 구현 시 이 스킬 적용.
 ---
 
-# WPF Animation 패턴
+# WPF Animation Patterns
 
-WPF 애니메이션은 시간 기반으로 속성 값을 변경하여 시각적 효과를 만듭니다.
+WPF animations create visual effects by changing property values over time.
 
-## 1. 애니메이션 구성 요소
+## 1. Animation Components
 
 ```
-Storyboard (컨테이너)
-├── Timeline (시간 제어)
-│   ├── Animation (값 변경)
+Storyboard (container)
+├── Timeline (time control)
+│   ├── Animation (value change)
 │   │   ├── DoubleAnimation
 │   │   ├── ColorAnimation
 │   │   └── ...
-│   └── AnimationUsingKeyFrames (키프레임)
+│   └── AnimationUsingKeyFrames (keyframes)
 │       ├── DoubleAnimationUsingKeyFrames
 │       └── ...
-└── EasingFunction (가속/감속)
+└── EasingFunction (acceleration/deceleration)
 ```
 
 ---
 
-## 2. 기본 애니메이션 (XAML)
+## 2. Basic Animation (XAML)
 
 ### 2.1 DoubleAnimation
 
@@ -37,9 +37,8 @@ Storyboard (컨테이너)
                     <Trigger.EnterActions>
                         <BeginStoryboard>
                             <Storyboard>
-                                <!-- Width 애니메이션 -->
                                 <!-- Width animation -->
-                                <DoubleAnimation 
+                                <DoubleAnimation
                                     Storyboard.TargetProperty="Width"
                                     To="150"
                                     Duration="0:0:0.3"/>
@@ -49,7 +48,7 @@ Storyboard (컨테이너)
                     <Trigger.ExitActions>
                         <BeginStoryboard>
                             <Storyboard>
-                                <DoubleAnimation 
+                                <DoubleAnimation
                                     Storyboard.TargetProperty="Width"
                                     To="100"
                                     Duration="0:0:0.3"/>
@@ -71,9 +70,8 @@ Storyboard (컨테이너)
         <EventTrigger RoutedEvent="MouseEnter">
             <BeginStoryboard>
                 <Storyboard>
-                    <!-- 배경색 애니메이션 -->
                     <!-- Background color animation -->
-                    <ColorAnimation 
+                    <ColorAnimation
                         Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
                         To="Red"
                         Duration="0:0:0.5"/>
@@ -83,7 +81,7 @@ Storyboard (컨테이너)
         <EventTrigger RoutedEvent="MouseLeave">
             <BeginStoryboard>
                 <Storyboard>
-                    <ColorAnimation 
+                    <ColorAnimation
                         Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
                         To="Blue"
                         Duration="0:0:0.5"/>
@@ -102,9 +100,8 @@ Storyboard (컨테이너)
         <EventTrigger RoutedEvent="Loaded">
             <BeginStoryboard>
                 <Storyboard>
-                    <!-- 슬라이드 인 효과 -->
                     <!-- Slide-in effect -->
-                    <ThicknessAnimation 
+                    <ThicknessAnimation
                         Storyboard.TargetProperty="Margin"
                         From="-100,0,0,0"
                         To="0,0,0,0"
@@ -120,32 +117,26 @@ Storyboard (컨테이너)
 
 ## 3. EasingFunction
 
-### 3.1 주요 Easing 종류
+### 3.1 Main Easing Types
 
 ```xml
 <Storyboard>
     <DoubleAnimation Storyboard.TargetProperty="Width" To="200" Duration="0:0:0.5">
         <DoubleAnimation.EasingFunction>
-            <!-- 다양한 이징 함수 -->
             <!-- Various easing functions -->
-            
-            <!-- 부드러운 감속 -->
+
             <!-- Smooth deceleration -->
             <QuadraticEase EasingMode="EaseOut"/>
-            
-            <!-- 탄성 효과 -->
+
             <!-- Elastic effect -->
             <!--<ElasticEase Oscillations="3" Springiness="5"/>-->
-            
-            <!-- 바운스 효과 -->
+
             <!-- Bounce effect -->
             <!--<BounceEase Bounces="3" Bounciness="2"/>-->
-            
-            <!-- 백 효과 (오버슛) -->
+
             <!-- Back effect (overshoot) -->
             <!--<BackEase Amplitude="0.3"/>-->
-            
-            <!-- 원형 이징 -->
+
             <!-- Circular easing -->
             <!--<CircleEase EasingMode="EaseInOut"/>-->
         </DoubleAnimation.EasingFunction>
@@ -155,22 +146,21 @@ Storyboard (컨테이너)
 
 ### 3.2 EasingMode
 
-| 모드 | 설명 |
-|------|------|
-| **EaseIn** | 시작 시 느림, 끝에서 빠름 |
-| **EaseOut** | 시작 시 빠름, 끝에서 느림 |
-| **EaseInOut** | 양쪽 끝에서 느림, 중간에서 빠름 |
+| Mode | Description |
+|------|-------------|
+| **EaseIn** | Slow at start, fast at end |
+| **EaseOut** | Fast at start, slow at end |
+| **EaseInOut** | Slow at both ends, fast in middle |
 
 ---
 
-## 4. KeyFrame 애니메이션
+## 4. KeyFrame Animation
 
 ### 4.1 DoubleAnimationUsingKeyFrames
 
 ```xml
 <Storyboard>
     <DoubleAnimationUsingKeyFrames Storyboard.TargetProperty="Opacity">
-        <!-- 순차적 키프레임 -->
         <!-- Sequential keyframes -->
         <LinearDoubleKeyFrame Value="0.3" KeyTime="0:0:0.2"/>
         <LinearDoubleKeyFrame Value="1.0" KeyTime="0:0:0.4"/>
@@ -188,11 +178,10 @@ Storyboard (컨테이너)
 </Storyboard>
 ```
 
-### 4.2 ObjectAnimationUsingKeyFrames (불연속 값)
+### 4.2 ObjectAnimationUsingKeyFrames (Discrete Values)
 
 ```xml
 <Storyboard>
-    <!-- Visibility 전환 (연속값이 아닌 경우) -->
     <!-- Visibility toggle (non-continuous values) -->
     <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="Visibility">
         <DiscreteObjectKeyFrame KeyTime="0:0:0" Value="{x:Static Visibility.Visible}"/>
@@ -204,9 +193,9 @@ Storyboard (컨테이너)
 
 ---
 
-## 5. Transform 애니메이션
+## 5. Transform Animation
 
-### 5.1 RenderTransform 애니메이션
+### 5.1 RenderTransform Animation
 
 ```xml
 <Button Content="Rotate" RenderTransformOrigin="0.5,0.5">
@@ -217,9 +206,8 @@ Storyboard (컨테이너)
         <EventTrigger RoutedEvent="Click">
             <BeginStoryboard>
                 <Storyboard>
-                    <!-- 회전 애니메이션 -->
                     <!-- Rotation animation -->
-                    <DoubleAnimation 
+                    <DoubleAnimation
                         Storyboard.TargetName="RotateTransform"
                         Storyboard.TargetProperty="Angle"
                         By="360"
@@ -231,7 +219,7 @@ Storyboard (컨테이너)
 </Button>
 ```
 
-### 5.2 복합 Transform 애니메이션
+### 5.2 Composite Transform Animation
 
 ```xml
 <Border Width="100" Height="100" Background="Blue" RenderTransformOrigin="0.5,0.5">
@@ -246,16 +234,15 @@ Storyboard (컨테이너)
         <EventTrigger RoutedEvent="MouseEnter">
             <BeginStoryboard>
                 <Storyboard>
-                    <!-- 동시 실행 애니메이션 -->
                     <!-- Simultaneous animations -->
-                    <DoubleAnimation Storyboard.TargetName="Scale" 
-                                     Storyboard.TargetProperty="ScaleX" 
+                    <DoubleAnimation Storyboard.TargetName="Scale"
+                                     Storyboard.TargetProperty="ScaleX"
                                      To="1.2" Duration="0:0:0.2"/>
-                    <DoubleAnimation Storyboard.TargetName="Scale" 
-                                     Storyboard.TargetProperty="ScaleY" 
+                    <DoubleAnimation Storyboard.TargetName="Scale"
+                                     Storyboard.TargetProperty="ScaleY"
                                      To="1.2" Duration="0:0:0.2"/>
-                    <DoubleAnimation Storyboard.TargetName="Rotate" 
-                                     Storyboard.TargetProperty="Angle" 
+                    <DoubleAnimation Storyboard.TargetName="Rotate"
+                                     Storyboard.TargetProperty="Angle"
                                      To="10" Duration="0:0:0.2"/>
                 </Storyboard>
             </BeginStoryboard>
@@ -266,9 +253,9 @@ Storyboard (컨테이너)
 
 ---
 
-## 6. 코드에서 애니메이션
+## 6. Animation in Code
 
-### 6.1 기본 애니메이션
+### 6.1 Basic Animation
 
 ```csharp
 namespace MyApp.Animations;
@@ -280,7 +267,6 @@ using System.Windows.Media.Animation;
 public static class AnimationHelper
 {
     /// <summary>
-    /// Opacity 페이드 애니메이션
     /// Opacity fade animation
     /// </summary>
     public static void FadeIn(UIElement element, double durationSeconds = 0.3)
@@ -292,7 +278,7 @@ public static class AnimationHelper
             Duration = TimeSpan.FromSeconds(durationSeconds),
             EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
         };
-        
+
         element.BeginAnimation(UIElement.OpacityProperty, animation);
     }
 
@@ -310,13 +296,13 @@ public static class AnimationHelper
         {
             animation.Completed += (s, e) => onCompleted();
         }
-        
+
         element.BeginAnimation(UIElement.OpacityProperty, animation);
     }
 }
 ```
 
-### 6.2 Storyboard로 복합 애니메이션
+### 6.2 Composite Animation with Storyboard
 
 ```csharp
 namespace MyApp.Animations;
@@ -329,12 +315,10 @@ using System.Windows.Media.Animation;
 public static class StoryboardHelper
 {
     /// <summary>
-    /// 확대 + 페이드 인 애니메이션
     /// Scale up + fade in animation
     /// </summary>
     public static void ScaleFadeIn(FrameworkElement element, double durationSeconds = 0.3)
     {
-        // Transform 설정
         // Setup transform
         var scaleTransform = new ScaleTransform(0.8, 0.8);
         element.RenderTransform = scaleTransform;
@@ -343,7 +327,6 @@ public static class StoryboardHelper
 
         var storyboard = new Storyboard();
 
-        // Opacity 애니메이션
         // Opacity animation
         var opacityAnimation = new DoubleAnimation
         {
@@ -355,7 +338,6 @@ public static class StoryboardHelper
         Storyboard.SetTargetProperty(opacityAnimation, new PropertyPath(UIElement.OpacityProperty));
         storyboard.Children.Add(opacityAnimation);
 
-        // ScaleX 애니메이션
         // ScaleX animation
         var scaleXAnimation = new DoubleAnimation
         {
@@ -364,11 +346,10 @@ public static class StoryboardHelper
             EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
         };
         Storyboard.SetTarget(scaleXAnimation, element);
-        Storyboard.SetTargetProperty(scaleXAnimation, 
+        Storyboard.SetTargetProperty(scaleXAnimation,
             new PropertyPath("RenderTransform.ScaleX"));
         storyboard.Children.Add(scaleXAnimation);
 
-        // ScaleY 애니메이션
         // ScaleY animation
         var scaleYAnimation = new DoubleAnimation
         {
@@ -377,7 +358,7 @@ public static class StoryboardHelper
             EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
         };
         Storyboard.SetTarget(scaleYAnimation, element);
-        Storyboard.SetTargetProperty(scaleYAnimation, 
+        Storyboard.SetTargetProperty(scaleYAnimation,
             new PropertyPath("RenderTransform.ScaleY"));
         storyboard.Children.Add(scaleYAnimation);
 
@@ -386,7 +367,7 @@ public static class StoryboardHelper
 }
 ```
 
-### 6.3 애니메이션 중단/재개
+### 6.3 Stop/Resume Animation
 
 ```csharp
 namespace MyApp.Animations;
@@ -434,9 +415,9 @@ public sealed class AnimationController
 
 ---
 
-## 7. VisualStateManager 통합
+## 7. VisualStateManager Integration
 
-### 7.1 상태 기반 애니메이션
+### 7.1 State-Based Animation
 
 ```xml
 <Style TargetType="{x:Type Button}">
@@ -448,7 +429,7 @@ public sealed class AnimationController
                         <VisualStateGroup x:Name="CommonStates">
                             <VisualState x:Name="Normal">
                                 <Storyboard>
-                                    <ColorAnimation 
+                                    <ColorAnimation
                                         Storyboard.TargetName="Border"
                                         Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
                                         To="#2196F3" Duration="0:0:0.2"/>
@@ -456,7 +437,7 @@ public sealed class AnimationController
                             </VisualState>
                             <VisualState x:Name="MouseOver">
                                 <Storyboard>
-                                    <ColorAnimation 
+                                    <ColorAnimation
                                         Storyboard.TargetName="Border"
                                         Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
                                         To="#1976D2" Duration="0:0:0.2"/>
@@ -464,7 +445,7 @@ public sealed class AnimationController
                             </VisualState>
                             <VisualState x:Name="Pressed">
                                 <Storyboard>
-                                    <ColorAnimation 
+                                    <ColorAnimation
                                         Storyboard.TargetName="Border"
                                         Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
                                         To="#0D47A1" Duration="0:0:0.1"/>
@@ -482,26 +463,25 @@ public sealed class AnimationController
 
 ---
 
-## 8. 성능 고려사항
+## 8. Performance Considerations
 
-| 속성 | 성능 | 설명 |
-|------|------|------|
-| **Opacity** | ⭐⭐⭐ | 가장 효율적 |
-| **RenderTransform** | ⭐⭐⭐ | 레이아웃 재계산 없음 |
-| **Clip** | ⭐⭐ | 중간 성능 |
-| **Width/Height** | ⭐ | 레이아웃 재계산 발생 |
-| **Margin** | ⭐ | 레이아웃 재계산 발생 |
+| Property | Performance | Description |
+|----------|-------------|-------------|
+| **Opacity** | ⭐⭐⭐ | Most efficient |
+| **RenderTransform** | ⭐⭐⭐ | No layout recalculation |
+| **Clip** | ⭐⭐ | Medium performance |
+| **Width/Height** | ⭐ | Causes layout recalculation |
+| **Margin** | ⭐ | Causes layout recalculation |
 
 ```csharp
-// 성능 최적화 힌트
 // Performance optimization hints
 RenderOptions.SetBitmapScalingMode(element, BitmapScalingMode.LowQuality);
-Timeline.SetDesiredFrameRate(storyboard, 30); // 기본 60fps → 30fps
+Timeline.SetDesiredFrameRate(storyboard, 30); // Default 60fps → 30fps
 ```
 
 ---
 
-## 9. 참고 문서
+## 9. References
 
 - [Animation Overview - Microsoft Docs](https://learn.microsoft.com/en-us/dotnet/desktop/wpf/graphics-multimedia/animation-overview)
 - [Storyboards Overview - Microsoft Docs](https://learn.microsoft.com/en-us/dotnet/desktop/wpf/graphics-multimedia/storyboards-overview)

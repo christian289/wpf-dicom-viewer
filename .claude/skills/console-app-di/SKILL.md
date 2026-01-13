@@ -3,11 +3,11 @@ name: console-app-di
 description: 'Console Application에서 GenericHost와 DI를 사용한 의존성 주입 패턴'
 ---
 
-# Console Application DI 패턴
+# Console Application DI Pattern
 
-.NET Console Application에서 GenericHost를 사용한 의존성 주입 구현 가이드입니다.
+A guide for implementing dependency injection using GenericHost in .NET Console Application.
 
-## 1. 필수 NuGet 패키지
+## 1. Required NuGet Package
 
 ```xml
 <ItemGroup>
@@ -15,7 +15,7 @@ description: 'Console Application에서 GenericHost와 DI를 사용한 의존성
 </ItemGroup>
 ```
 
-## 2. 기본 구현
+## 2. Basic Implementation
 
 ### 2.1 Program.cs
 
@@ -53,13 +53,13 @@ public sealed class App(IMyService myService)
 
 ## 3. Service Lifetime
 
-| Lifetime | 설명 | 사용 시점 |
-|----------|------|----------|
-| `Singleton` | 앱 전체 단일 인스턴스 | 상태 없는 서비스 |
-| `Scoped` | 요청당 단일 인스턴스 | DbContext |
-| `Transient` | 주입마다 새 인스턴스 | 경량 서비스 |
+| Lifetime | Description | Use When |
+|----------|-------------|----------|
+| `Singleton` | Single instance for entire app | Stateless services |
+| `Scoped` | Single instance per request | DbContext |
+| `Transient` | New instance per injection | Lightweight services |
 
-## 4. Configuration 통합
+## 4. Configuration Integration
 
 ```csharp
 var host = Host.CreateDefaultBuilder(args)
@@ -76,25 +76,25 @@ var host = Host.CreateDefaultBuilder(args)
     .Build();
 ```
 
-## 5. Logging 통합
+## 5. Logging Integration
 
 ```csharp
 public sealed class App(ILogger<App> logger)
 {
     public Task RunAsync()
     {
-        logger.LogInformation("애플리케이션 시작");
+        logger.LogInformation("Application started");
         return Task.CompletedTask;
     }
 }
 ```
 
-## 6. 주의사항
+## 6. Important Notes
 
-### ⚠️ Service Locator 패턴 금지
+### ⚠️ Avoid Service Locator Pattern
 
 ```csharp
-// ❌ 나쁜 예
+// ❌ Bad example
 public sealed class BadService(IServiceProvider provider)
 {
     public void DoWork()
@@ -103,7 +103,7 @@ public sealed class BadService(IServiceProvider provider)
     }
 }
 
-// ✅ 좋은 예
+// ✅ Good example
 public sealed class GoodService(IMyService myService)
 {
     public void DoWork() { }
@@ -112,8 +112,9 @@ public sealed class GoodService(IMyService myService)
 
 ### ⚠️ Captive Dependency
 
-- Singleton이 Scoped/Transient를 주입받으면 안 됨
+- Singleton should not inject Scoped/Transient dependencies
 
-## 7. 참고 문서
+## 7. References
 
 - [.NET Generic Host](https://learn.microsoft.com/en-us/dotnet/core/extensions/generic-host)
+

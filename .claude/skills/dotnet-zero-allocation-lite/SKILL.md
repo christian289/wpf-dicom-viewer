@@ -3,15 +3,15 @@ name: dotnet-zero-allocation-lite
 description: 'Zero Allocation 핵심 패턴 (Span, ArrayPool)'
 ---
 
-# Zero Allocation 핵심
+# Zero Allocation Essentials
 
-## 1. Span<T> 기본
+## 1. Span<T> Basics
 
 ```csharp
-// 문자열 슬라이싱 (Heap 할당 없음)
+// String slicing (no Heap allocation)
 ReadOnlySpan<char> part = text.AsSpan(0, 10);
 
-// 배열 슬라이싱
+// Array slicing
 Span<int> span = data.AsSpan();
 Span<int> firstHalf = span[..^(span.Length / 2)];
 ```
@@ -19,7 +19,7 @@ Span<int> firstHalf = span[..^(span.Length / 2)];
 ## 2. ArrayPool<T>
 
 ```csharp
-// 배열 대여
+// Rent array
 var buffer = ArrayPool<byte>.Shared.Rent(size);
 
 try
@@ -35,13 +35,13 @@ finally
 ## 3. stackalloc
 
 ```csharp
-// Stack에 작은 버퍼 할당
+// Allocate small buffer on Stack
 Span<byte> buffer = stackalloc byte[256];
 ```
 
-## 4. 주의사항
+## 4. Important Notes
 
-- ⚠️ Span<T>는 async-await 사용 불가
-- ⚠️ ArrayPool: Rent 후 반드시 Return 호출
+- Span<T> cannot be used with async-await
+- ArrayPool: Must call Return after Rent
 
-> 상세 내용: `/dotnet-zero-allocation` skill 참조
+> For details: See `/dotnet-zero-allocation` skill

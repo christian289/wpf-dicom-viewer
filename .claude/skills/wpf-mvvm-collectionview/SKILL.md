@@ -3,19 +3,19 @@ name: wpf-mvvm-collectionview
 description: 'WPF에서 CollectionView를 Service Layer로 캡슐화하여 MVVM 원칙을 준수하는 패턴'
 ---
 
-# 5.6 CollectionView를 사용한 MVVM 패턴
+# 5.6 MVVM Pattern with CollectionView
 
-## 프로젝트 구조
+## Project Structure
 
-templates 폴더에 .NET 9 WPF 프로젝트 예제가 포함되어 있습니다.
+The templates folder contains a .NET 9 WPF project example.
 
 ```
 templates/
-├── WpfCollectionViewSample.Core/           ← 순수 C# 모델 및 인터페이스
+├── WpfCollectionViewSample.Core/           ← Pure C# models and interfaces
 │   ├── Member.cs
 │   ├── IMemberCollectionService.cs
 │   └── WpfCollectionViewSample.Core.csproj
-├── WpfCollectionViewSample.ViewModels/     ← ViewModel (WPF 참조 없음)
+├── WpfCollectionViewSample.ViewModels/     ← ViewModel (no WPF references)
 │   ├── MainViewModel.cs
 │   ├── GlobalUsings.cs
 │   └── WpfCollectionViewSample.ViewModels.csproj
@@ -33,35 +33,34 @@ templates/
     └── WpfCollectionViewSample.App.csproj
 ```
 
-#### 5.6.1 문제 상황
+#### 5.6.1 Problem Scenario
 
-하나의 원본 컬렉션을 여러 View에서 각각 다른 조건으로 필터링하여 사용하면서도 MVVM 원칙을 준수해야 하는 경우
+When a single source collection needs to be filtered with different conditions across multiple Views while adhering to MVVM principles
 
-#### 5.6.2 핵심 원칙
+#### 5.6.2 Core Principles
 
-- **ViewModel은 WPF 관련 어셈블리를 참조하면 안 됨** (MVVM 위반)
-- **Service Layer를 통해 `CollectionViewSource` 접근을 캡슐화**
-- **ViewModel은 `IEnumerable` 또는 순수 BCL 타입만 사용**
+- **ViewModel must not reference WPF-related assemblies** (MVVM violation)
+- **Encapsulate `CollectionViewSource` access through Service Layer**
+- **ViewModel uses only `IEnumerable` or pure BCL types**
 
-#### 5.6.3 아키텍처 계층 구조
+#### 5.6.3 Architecture Layer Structure
 
 ```
 View (XAML)
     ↓ DataBinding
-ViewModel Layer (IEnumerable 사용, WPF 어셈블리 참조 X)
-    ↓ IEnumerable 인터페이스
-Service Layer (CollectionViewSource 직접 사용)
+ViewModel Layer (uses IEnumerable, no WPF assembly reference)
+    ↓ IEnumerable interface
+Service Layer (uses CollectionViewSource directly)
     ↓
 Data Layer (ObservableCollection<T>)
 ```
 
-#### 5.6.4 구현 패턴
+#### 5.6.4 Implementation Pattern
 
 **1. Service Layer (CollectionViewFactory/Store)**
 
 ```csharp
 // Services/MemberCollectionService.cs
-// 이 클래스는 PresentationFramework 참조 가능
 // This class can reference PresentationFramework
 namespace MyApp.Services;
 
@@ -69,8 +68,6 @@ public sealed class MemberCollectionService
 {
     private ObservableCollection<Member> Source { get; } = [];
 
-    // Factory Method: 필터링된 뷰 생성
-    // IEnumerable로 반환하여 ViewModel이 WPF 타입을 모르게 함
     // Factory Method: Create filtered view
     // Returns IEnumerable so ViewModel doesn't know WPF types
     public IEnumerable CreateView(Predicate<object>? filter = null)
@@ -83,8 +80,7 @@ public sealed class MemberCollectionService
             view.Filter = filter;
         }
 
-        return view; // ICollectionView는 IEnumerable을 상속
-                     // ICollectionView inherits IEnumerable
+        return view; // ICollectionView inherits IEnumerable
     }
 
     public void Add(Member item) => Source.Add(item);
@@ -102,7 +98,6 @@ public sealed class MemberCollectionService
 **2. ViewModel Layer**
 
 ```csharp
-// ViewModel은 IEnumerable만 사용 (순수 BCL 타입)
 // ViewModel uses only IEnumerable (pure BCL type)
 namespace MyApp.ViewModels;
 
@@ -112,13 +107,11 @@ public abstract class BaseFilteredViewModel
 
     protected BaseFilteredViewModel(Predicate<object> filter)
     {
-        // Service에서 IEnumerable로 받음
         // Receives IEnumerable from Service
         Members = memberService.CreateView(filter);
     }
 }
 
-// 각 필터링된 ViewModel
 // Each filtered ViewModel
 public sealed class WalkerViewModel : BaseFilteredViewModel
 {
@@ -128,7 +121,6 @@ public sealed class WalkerViewModel : BaseFilteredViewModel
     }
 }
 
-// 또는 직접 타입 캐스팅하여 사용
 // Or use with direct type casting
 public sealed class AppViewModel : ObservableObject
 {
@@ -139,23 +131,20 @@ public sealed class AppViewModel : ObservableObject
         Members = memberService.CreateView();
     }
 
-    // 필요시 LINQ로 컬렉션 조작
     // Manipulate collection with LINQ when needed
     private void ProcessMembers()
     {
         var memberList = Members?.Cast<Member>().ToList();
-        // 처리 로직...
         // Processing logic...
     }
 }
 ```
 
-**3. View에서 CollectionView 초기화 (대안 방법)**
+**3. Initialize CollectionView from View (Alternative Approach)**
 
-이 방법은 ViewModel이 완전히 WPF로부터 독립적이지만, View의 Code-Behind에서 초기화 로직이 필요합니다.
+This approach keeps ViewModel completely independent from WPF, but requires initialization logic in View's Code-Behind.
 
 ```csharp
-// ViewModel - 순수 BCL만 사용
 // ViewModel - Uses pure BCL only
 namespace MyApp.ViewModels;
 
@@ -166,7 +155,6 @@ public sealed partial class MainViewModel : ObservableObject
 
     private ICollectionView? _peopleView;
 
-    // View에서 주입받음
     // Injected from View
     public void InitializeCollectionView(ICollectionView collectionView)
     {
@@ -176,13 +164,11 @@ public sealed partial class MainViewModel : ObservableObject
 
     private bool FilterPerson(object item)
     {
-        // 필터링 로직
         // Filtering logic
         return true;
     }
 }
 
-// MainWindow.xaml.cs - View의 Code-Behind
 // MainWindow.xaml.cs - View's Code-Behind
 namespace MyApp.Views;
 
@@ -195,76 +181,66 @@ public partial class MainWindow : Window
         var viewModel = new MainViewModel();
         DataContext = viewModel;
 
-        // View 레이어에서 CollectionViewSource 생성
         // Create CollectionViewSource in View layer
         ICollectionView collectionView =
             CollectionViewSource.GetDefaultView(viewModel.People);
 
-        // ViewModel에 주입
         // Inject into ViewModel
         viewModel.InitializeCollectionView(collectionView);
     }
 }
 ```
 
-**주의**: 이 방법은 ViewModel이 `ICollectionView` 타입을 알게 되므로, WindowsBase.dll 참조가 필요합니다. 완전한 독립을 원한다면 Service Layer 방식을 사용하세요.
+**Note**: This approach requires ViewModel to know the `ICollectionView` type, so WindowsBase.dll reference is needed. For complete independence, use the Service Layer approach.
 
-#### 5.6.5 프로젝트 구조 (엄격한 MVVM)
+#### 5.6.5 Project Structure (Strict MVVM)
 
 ```
-MyApp.Models/              // 순수 C# 모델, BCL만 사용
-                          // Pure C# models, BCL only
+MyApp.Models/              // Pure C# models, BCL only
 
-MyApp.ViewModels/         // 순수 C# ViewModel
-                          // Pure C# ViewModel
-                          // WPF 어셈블리 참조 X
+MyApp.ViewModels/         // Pure C# ViewModel
                           // No WPF assembly references
-                          // IEnumerable만 사용
                           // Uses IEnumerable only
 
-MyApp.Services/           // PresentationFramework 참조 O
-                          // PresentationFramework reference: YES
-                          // WindowsBase 참조 O
+MyApp.Services/           // PresentationFramework reference: YES
                           // WindowsBase reference: YES
-                          // CollectionViewSource 사용
                           // Uses CollectionViewSource
 
-MyApp.Views/              // 모든 WPF 어셈블리 참조
-                          // References all WPF assemblies
+MyApp.Views/              // References all WPF assemblies
 ```
 
-#### 5.6.6 참조 어셈블리 규칙
+#### 5.6.6 Assembly Reference Rules
 
-**ViewModel 프로젝트가 참조하면 안 되는 어셈블리:**
+**Assemblies that ViewModel project must NOT reference:**
 
-- ❌ `WindowsBase.dll` (ICollectionView 포함)
-- ❌ `PresentationFramework.dll` (CollectionViewSource 포함)
+- ❌ `WindowsBase.dll` (contains ICollectionView)
+- ❌ `PresentationFramework.dll` (contains CollectionViewSource)
 - ❌ `PresentationCore.dll`
 
-**ViewModel 프로젝트가 참조 가능한 어셈블리:**
+**Assemblies that ViewModel project CAN reference:**
 
-- ✅ BCL (Base Class Library) 타입만 사용
+- ✅ BCL (Base Class Library) types only
 - ✅ `System.Collections.IEnumerable`
 - ✅ `System.Collections.ObjectModel.ObservableCollection<T>`
 - ✅ `System.ComponentModel.INotifyPropertyChanged`
 
-**Service 프로젝트가 참조 가능한 어셈블리:**
+**Assemblies that Service project CAN reference:**
 
 - ✅ `WindowsBase.dll`
 - ✅ `PresentationFramework.dll`
-- ✅ 모든 WPF 관련 어셈블리
+- ✅ All WPF-related assemblies
 
-#### 5.6.7 핵심 장점
+#### 5.6.7 Key Advantages
 
-1. **단일 원본 유지**: 모든 View가 하나의 `ObservableCollection` 공유
-2. **자동 동기화**: 원본 변경 시 모든 필터링된 View에 자동 반영
-3. **MVVM 준수**: ViewModel이 UI 프레임워크에 완전 독립적
-4. **재사용성**: 다양한 필터 조건으로 여러 View 생성 가능
-5. **테스트 용이성**: ViewModel을 WPF 없이 단위 테스트 가능
+1. **Single source maintenance**: All Views share one `ObservableCollection`
+2. **Automatic synchronization**: Source changes automatically reflect in all filtered Views
+3. **MVVM compliance**: ViewModel is completely independent from UI framework
+4. **Reusability**: Multiple Views can be created with various filter conditions
+5. **Testability**: ViewModel can be unit tested without WPF
 
-#### 5.6.8 Service Layer에서 CollectionView 기능 활용
+#### 5.6.8 Utilizing CollectionView Features in Service Layer
 
-Service Layer에서 CollectionView의 다양한 기능을 캡슐화하여 제공할 수 있습니다.
+Service Layer can encapsulate various CollectionView features.
 
 ```csharp
 // Services/MemberCollectionService.cs
@@ -287,7 +263,6 @@ public sealed class MemberCollectionService
         return view;
     }
 
-    // 정렬된 뷰 생성
     // Create sorted view
     public IEnumerable CreateSortedView(
         string propertyName,
@@ -303,7 +278,6 @@ public sealed class MemberCollectionService
         return view;
     }
 
-    // 그룹화된 뷰 생성
     // Create grouped view
     public IEnumerable CreateGroupedView(string groupPropertyName)
     {
@@ -323,10 +297,9 @@ public sealed class MemberCollectionService
 }
 ```
 
-#### 5.6.9 DI/IoC 적용 시
+#### 5.6.9 When Applying DI/IoC
 
 ```csharp
-// Interface 정의 (순수 BCL 타입만 사용)
 // Interface definition (uses pure BCL types only)
 namespace MyApp.Services;
 
@@ -338,11 +311,9 @@ public interface IMemberCollectionService
     void Clear();
 }
 
-// DI 컨테이너 등록
 // DI container registration
 services.AddSingleton<IMemberCollectionService, MemberCollectionService>();
 
-// ViewModel 생성자 주입
 // ViewModel constructor injection
 namespace MyApp.ViewModels;
 
@@ -353,19 +324,20 @@ public sealed partial class AppViewModel(IMemberCollectionService memberService)
 }
 ```
 
-#### 5.6.10 실무 적용 시 권장사항
+#### 5.6.10 Practical Recommendations
 
-1. **프로젝트 분리**: ViewModel과 Service를 별도 프로젝트로 분리
-2. **Interface 활용**: Service는 인터페이스로 정의하여 테스트 용이성 확보
-3. **Singleton 또는 DI**: Service는 Singleton 또는 DI 컨테이너로 관리
-4. **명명 규칙**:
-   - `MemberCollectionService` (Service 접미사)
-   - `MemberViewFactory` (Factory 접미사)
-   - `MemberStore` (Store 접미사)
+1. **Project separation**: Separate ViewModel and Service into different projects
+2. **Interface usage**: Define Services with interfaces for testability
+3. **Singleton or DI**: Manage Services as Singleton or through DI container
+4. **Naming conventions**:
+   - `MemberCollectionService` (Service suffix)
+   - `MemberViewFactory` (Factory suffix)
+   - `MemberStore` (Store suffix)
 
-#### 5.6.11 Microsoft 공식 문서
+#### 5.6.11 Microsoft Official Documentation
 
 - [CollectionViewSource Class](https://learn.microsoft.com/en-us/dotnet/api/system.windows.data.collectionviewsource?view=windowsdesktop-10.0)
 - [Data Binding Overview - Collection Views](https://learn.microsoft.com/en-us/dotnet/desktop/wpf/data/#binding-to-collections)
 - [How to: Filter Data in a View](https://learn.microsoft.com/en-us/dotnet/desktop/wpf/data/how-to-filter-data-in-a-view)
 - [Service Layer Pattern](https://learn.microsoft.com/en-us/aspnet/mvc/overview/older-versions-1/models-data/validating-with-a-service-layer-cs#creating-a-service-layer)
+

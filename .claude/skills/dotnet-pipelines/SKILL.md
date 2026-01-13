@@ -5,27 +5,27 @@ description: '.NET Streaming 패턴 (System.IO.Pipelines)'
 
 # .NET Streaming (System.IO.Pipelines)
 
-고성능 I/O 파이프라인을 위한 System.IO.Pipelines API 가이드입니다.
+A guide for System.IO.Pipelines API for high-performance I/O pipelines.
 
-## 1. 핵심 개념
+## 1. Core Concepts
 
-| 개념 | 설명 |
-|------|------|
-| `Pipe` | 메모리 버퍼 기반 읽기/쓰기 파이프 |
-| `PipeReader` | 파이프에서 데이터 읽기 |
-| `PipeWriter` | 파이프에 데이터 쓰기 |
-| `ReadOnlySequence<T>` | 비연속 메모리 시퀀스 |
+| Concept | Description |
+|---------|-------------|
+| `Pipe` | Memory buffer-based read/write pipe |
+| `PipeReader` | Read data from pipe |
+| `PipeWriter` | Write data to pipe |
+| `ReadOnlySequence<T>` | Non-contiguous memory sequence |
 
-## 2. 장점
+## 2. Advantages
 
-- **Zero-copy**: 불필요한 메모리 복사 최소화
-- **배압 제어**: 생산자-소비자 간 속도 조절
-- **메모리 풀링**: 자동 버퍼 재사용
-- **비동기 I/O**: 효율적인 비동기 처리
+- **Zero-copy**: Minimizes unnecessary memory copying
+- **Backpressure control**: Speed regulation between producer and consumer
+- **Memory pooling**: Automatic buffer reuse
+- **Async I/O**: Efficient asynchronous processing
 
 ---
 
-## 3. 기본 사용법
+## 3. Basic Usage
 
 ```csharp
 using System.IO.Pipelines;
@@ -36,7 +36,7 @@ public sealed class PipelineProcessor
     {
         var pipe = new Pipe();
 
-        // Writer와 Reader 동시 실행
+        // Run Writer and Reader concurrently
         var writing = FillPipeAsync(stream, pipe.Writer);
         var reading = ReadPipeAsync(pipe.Reader);
 
@@ -49,7 +49,7 @@ public sealed class PipelineProcessor
 
         while (true)
         {
-            // 메모리 풀에서 버퍼 획득
+            // Acquire buffer from memory pool
             Memory<byte> memory = writer.GetMemory(minimumBufferSize);
 
             int bytesRead = await stream.ReadAsync(memory);
@@ -57,17 +57,17 @@ public sealed class PipelineProcessor
             if (bytesRead == 0)
                 break;
 
-            // 쓴 바이트 수 알림
+            // Notify bytes written
             writer.Advance(bytesRead);
 
-            // 데이터 플러시 및 Reader에게 알림
+            // Flush data and notify Reader
             FlushResult result = await writer.FlushAsync();
 
             if (result.IsCompleted)
                 break;
         }
 
-        // 쓰기 완료 신호
+        // Signal write completion
         await writer.CompleteAsync();
     }
 
@@ -78,17 +78,17 @@ public sealed class PipelineProcessor
             ReadResult result = await reader.ReadAsync();
             ReadOnlySequence<byte> buffer = result.Buffer;
 
-            // 버퍼 처리
+            // Process buffer
             ProcessBuffer(buffer);
 
-            // 처리한 위치까지 소비 완료 알림
+            // Notify consumption up to processed position
             reader.AdvanceTo(buffer.End);
 
             if (result.IsCompleted)
                 break;
         }
 
-        // 읽기 완료 신호
+        // Signal read completion
         await reader.CompleteAsync();
     }
 }
@@ -96,7 +96,7 @@ public sealed class PipelineProcessor
 
 ---
 
-## 4. 라인 단위 파싱
+## 4. Line-by-Line Parsing
 
 ```csharp
 private async Task ReadLinesAsync(PipeReader reader)
@@ -111,7 +111,7 @@ private async Task ReadLinesAsync(PipeReader reader)
             ProcessLine(line);
         }
 
-        // 처리되지 않은 데이터 위치 알림
+        // Notify unprocessed data position
         reader.AdvanceTo(buffer.Start, buffer.End);
 
         if (result.IsCompleted)
@@ -125,7 +125,7 @@ private bool TryReadLine(
     ref ReadOnlySequence<byte> buffer,
     out ReadOnlySequence<byte> line)
 {
-    // 줄바꿈 찾기
+    // Find newline
     SequencePosition? position = buffer.PositionOf((byte)'\n');
 
     if (position is null)
@@ -134,10 +134,10 @@ private bool TryReadLine(
         return false;
     }
 
-    // 줄바꿈 전까지 슬라이스
+    // Slice up to newline
     line = buffer.Slice(0, position.Value);
 
-    // 줄바꿈 이후로 버퍼 이동
+    // Move buffer past newline
     buffer = buffer.Slice(buffer.GetPosition(1, position.Value));
 
     return true;
@@ -146,19 +146,19 @@ private bool TryReadLine(
 
 ---
 
-## 5. ReadOnlySequence<T> 처리
+## 5. Processing ReadOnlySequence<T>
 
 ```csharp
 private void ProcessBuffer(ReadOnlySequence<byte> buffer)
 {
     if (buffer.IsSingleSegment)
     {
-        // 단일 세그먼트 - 직접 접근
+        // Single segment - direct access
         ProcessSpan(buffer.FirstSpan);
     }
     else
     {
-        // 다중 세그먼트 - 순회 필요
+        // Multiple segments - iteration required
         foreach (var segment in buffer)
         {
             ProcessSpan(segment.Span);
@@ -169,7 +169,7 @@ private void ProcessBuffer(ReadOnlySequence<byte> buffer)
 
 ---
 
-## 6. 네트워크 I/O 통합
+## 6. Network I/O Integration
 
 ```csharp
 public async Task ProcessSocketAsync(Socket socket)
@@ -209,16 +209,16 @@ private async Task ReceiveAsync(Socket socket, PipeWriter writer)
 
 ---
 
-## 7. PipeOptions 설정
+## 7. PipeOptions Configuration
 
 ```csharp
 var pipeOptions = new PipeOptions(
-    pool: MemoryPool<byte>.Shared,           // 메모리 풀
-    readerScheduler: PipeScheduler.ThreadPool, // Reader 스케줄러
-    writerScheduler: PipeScheduler.ThreadPool, // Writer 스케줄러
-    pauseWriterThreshold: 64 * 1024,         // Writer 일시정지 임계값
-    resumeWriterThreshold: 32 * 1024,        // Writer 재개 임계값
-    minimumSegmentSize: 4096,                // 최소 세그먼트 크기
+    pool: MemoryPool<byte>.Shared,           // Memory pool
+    readerScheduler: PipeScheduler.ThreadPool, // Reader scheduler
+    writerScheduler: PipeScheduler.ThreadPool, // Writer scheduler
+    pauseWriterThreshold: 64 * 1024,         // Writer pause threshold
+    resumeWriterThreshold: 32 * 1024,        // Writer resume threshold
+    minimumSegmentSize: 4096,                // Minimum segment size
     useSynchronizationContext: false
 );
 
@@ -227,52 +227,52 @@ var pipe = new Pipe(pipeOptions);
 
 ---
 
-## 8. 필수 NuGet 패키지
+## 8. Required NuGet Package
 
 ```xml
 <ItemGroup>
-  <!-- .NET Core 3.0+ 에서는 BCL에 포함 -->
+  <!-- Included in BCL for .NET Core 3.0+ -->
   <PackageReference Include="System.IO.Pipelines" Version="9.0.*" />
 </ItemGroup>
 ```
 
 ---
 
-## 9. 주의사항
+## 9. Important Notes
 
-### ⚠️ AdvanceTo 호출 필수
+### AdvanceTo Call Required
 
 ```csharp
-// ReadAsync 후 반드시 AdvanceTo 호출
+// Must call AdvanceTo after ReadAsync
 ReadResult result = await reader.ReadAsync();
-// ... 처리 ...
+// ... processing ...
 reader.AdvanceTo(consumed, examined);
 ```
 
-### ⚠️ 버퍼 수명
+### Buffer Lifetime
 
 ```csharp
-// ❌ 나쁜 예: ReadAsync 후 버퍼 저장
+// ❌ Bad example: Saving buffer after ReadAsync
 ReadOnlySequence<byte> saved;
 var result = await reader.ReadAsync();
-saved = result.Buffer; // 위험! AdvanceTo 후 무효화됨
+saved = result.Buffer; // Dangerous! Invalidated after AdvanceTo
 
-// ✅ 좋은 예: 필요한 데이터 복사
+// ✅ Good example: Copy needed data
 var copy = result.Buffer.ToArray();
 reader.AdvanceTo(result.Buffer.End);
 ```
 
-### ⚠️ 완료 호출
+### Completion Calls
 
 ```csharp
-// Writer와 Reader 모두 CompleteAsync 호출 필수
+// Must call CompleteAsync for both Writer and Reader
 await writer.CompleteAsync();
 await reader.CompleteAsync();
 ```
 
 ---
 
-## 10. 참고 문서
+## 10. References
 
 - [System.IO.Pipelines](https://learn.microsoft.com/en-us/dotnet/standard/io/pipelines)
 - [High-performance I/O](https://devblogs.microsoft.com/dotnet/system-io-pipelines-high-performance-io-in-net/)
