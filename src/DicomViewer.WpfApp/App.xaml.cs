@@ -72,7 +72,6 @@ public partial class App : System.Windows.Application
 
         // === ViewModels ===
         services.AddSingleton<MainWindowViewModel>();
-        services.AddSingleton<StudyListViewModel>();
         services.AddSingleton<ViewerViewModel>();
         services.AddSingleton<TciaExplorerViewModel>();
 

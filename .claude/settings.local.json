@@ -37,7 +37,8 @@
       "WebFetch(domain:www.osirix-viewer.com)",
       "Bash(xargs cat:*)",
       "Bash(git commit:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(python -m json.tool:*)"
     ]
   }
 }

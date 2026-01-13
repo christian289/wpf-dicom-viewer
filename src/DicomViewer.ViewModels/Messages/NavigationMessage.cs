@@ -7,12 +7,6 @@ namespace DicomViewer.ViewModels.Messages;
 public sealed record NavigationMessage(string ViewName, object? Parameter = null);
 
 /// <summary>
-/// Study 선택 메시지
-/// Study selection message
-/// </summary>
-public sealed record StudySelectedMessage(DicomStudyDto Study);
-
-/// <summary>
 /// Series 선택 메시지
 /// Series selection message
 /// </summary>

@@ -8,20 +8,33 @@
 
 ### Main Navigation (화면 전환)
 
-상단 도구 모음의 3개 탭으로 화면을 전환합니다.
+상단 도구 모음의 2개 탭으로 화면을 전환합니다.
 
 | Tab | View | Purpose |
 |-----|------|---------|
-| **Study List** | StudyListView | DICOM 폴더 열기 및 Study 검색 |
+| **TCIA Explorer** | TciaExplorerView | 공개 DICOM 데이터셋 탐색 및 다운로드 |
 | **Viewer** | ViewerView | DICOM 이미지 표시 및 조작 |
-| **TCIA Explorer** | TciaExplorerView | 공개 DICOM 데이터셋 다운로드 |
 
 ### Opening DICOM Files (DICOM 파일 열기)
 
-1. **Study List** 탭에서 **Open Folder** 버튼 클릭
-2. DICOM 파일이 있는 폴더 선택
-3. 자동으로 Study/Series 스캔 및 목록 표시
-4. Study 더블클릭 → Viewer로 이동
+1. **TCIA Explorer** 탭에서 Collection → Patient → Study → Series 순으로 탐색
+2. 원하는 Series 선택 후 **Download & Open** 버튼 클릭
+3. 다운로드 완료 시 자동으로 **Viewer** 탭으로 전환되어 이미지 표시
+
+### Why No "Study List" Tab? (왜 Study 탭이 없는가?)
+
+일반적인 병원용 DICOM Viewer(PACS Workstation)에는 Study List가 필수입니다:
+
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Study List    │ →  │  Series List    │ →  │     Viewer      │
+│  (환자/검사 목록) │    │  (시리즈 목록)   │    │   (이미지 보기)  │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
+
+**PACS(Picture Archiving and Communication System)**는 병원 내 수천~수만 건의 영상 검사를 관리하며, 의료진이 환자 ID/이름/검사일로 검색하여 필요한 Study를 찾습니다.
+
+그러나 이 프로젝트는 **포트폴리오 데모 목적**으로, TCIA(The Cancer Imaging Archive) 공개 데이터셋을 탐색하고 보는 것이 주 용도입니다. TCIA Explorer가 이미 Collection → Patient → Study → Series 계층 탐색을 제공하므로, 별도의 Study List 탭은 기능 중복이 되어 제거했습니다.
 
 ### Image Manipulation Tools (이미지 조작 도구)
 
@@ -96,3 +109,26 @@
 2. Collection → Patient → Study → Series 순으로 탐색
 3. **Download & Open** 버튼으로 다운로드 및 자동 로드
 4. 캐시 위치: `%LocalAppData%\DicomViewer\TciaCache\`
+
+### Non-Image Modality Filtering (비이미지 Modality 필터링)
+
+TCIA Explorer는 이미지 픽셀 데이터가 없는 Modality를 Series 목록에서 자동으로 필터링합니다.
+
+| Modality | 설명 | 필터링 이유 |
+|----------|------|-------------|
+| `RTSTRUCT` | Radiotherapy Structure Set | ROI 윤곽선 데이터만 포함 (방사선 치료 계획용) |
+| `RTPLAN` | Radiotherapy Plan | 방사선 치료 계획 메타데이터 |
+| `RTDOSE` | Radiotherapy Dose | 방사선 선량 분포 데이터 |
+| `SR` | Structured Report | 텍스트 기반 구조화된 보고서 |
+| `PR` | Presentation State | 이미지 표시 설정 정보 |
+| `SEG` | Segmentation | 분할 마스크 데이터 |
+| `KO` | Key Object Selection | 키 이미지 참조 목록 |
+| `REG` | Registration | 이미지 정합 정보 |
+| `FID` | Fiducials | 기준점 좌표 데이터 |
+
+이러한 Modality들은 일반 이미지 뷰어에서 렌더링할 수 없으며, 전문 방사선 치료 계획 소프트웨어에서 사용됩니다. 필터링된 Series가 있으면 상태 메시지에 표시됩니다:
+
+```
+2개의 Series를 찾았습니다. (4개 비이미지 제외)
+Found 2 series. (4 non-image excluded)
+```

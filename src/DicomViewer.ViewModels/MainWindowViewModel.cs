@@ -8,7 +8,6 @@ namespace DicomViewer.ViewModels;
 /// </summary>
 public sealed partial class MainWindowViewModel : ObservableRecipient
 {
-    private readonly StudyListViewModel _studyListViewModel;
     private readonly ViewerViewModel _viewerViewModel;
     private readonly TciaExplorerViewModel _tciaExplorerViewModel;
 
@@ -22,15 +21,13 @@ public sealed partial class MainWindowViewModel : ObservableRecipient
     private bool _isStatusError;
 
     public MainWindowViewModel(
-        StudyListViewModel studyListViewModel,
         ViewerViewModel viewerViewModel,
         TciaExplorerViewModel tciaExplorerViewModel)
     {
-        _studyListViewModel = studyListViewModel;
         _viewerViewModel = viewerViewModel;
         _tciaExplorerViewModel = tciaExplorerViewModel;
 
-        CurrentViewModel = _studyListViewModel;
+        CurrentViewModel = _tciaExplorerViewModel;
 
         IsActive = true;
     }
@@ -48,12 +45,6 @@ public sealed partial class MainWindowViewModel : ObservableRecipient
             r.IsStatusError = m.IsError;
         });
 
-        Messenger.Register<MainWindowViewModel, StudySelectedMessage>(this, (r, m) =>
-        {
-            r._viewerViewModel.LoadStudy(m.Study);
-            r.CurrentViewModel = r._viewerViewModel;
-        });
-
         Messenger.Register<MainWindowViewModel, OpenFolderMessage>(this, (r, m) =>
         {
             r._viewerViewModel.LoadFromFolder(m.FolderPath);
@@ -66,17 +57,10 @@ public sealed partial class MainWindowViewModel : ObservableRecipient
     {
         CurrentViewModel = message.ViewName switch
         {
-            "StudyList" => _studyListViewModel,
             "Viewer" => _viewerViewModel,
             "TciaExplorer" => _tciaExplorerViewModel,
             _ => CurrentViewModel
         };
-    }
-
-    [RelayCommand]
-    private void NavigateToStudyList()
-    {
-        CurrentViewModel = _studyListViewModel;
     }
 
     [RelayCommand]

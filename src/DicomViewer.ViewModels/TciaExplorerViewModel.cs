@@ -183,6 +183,23 @@ public sealed partial class TciaExplorerViewModel : ObservableRecipient
         _ = LoadSeriesAsync(value.StudyInstanceUID);
     }
 
+    /// <summary>
+    /// 이미지 픽셀 데이터가 없는 Modality 목록 (뷰어에서 표시 불가)
+    /// Modalities without image pixel data (cannot be displayed in viewer)
+    /// </summary>
+    private static readonly HashSet<string> NonImageModalities = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "RTSTRUCT",  // Radiotherapy Structure Set (방사선 치료 구조)
+        "RTPLAN",    // Radiotherapy Plan (방사선 치료 계획)
+        "RTDOSE",    // Radiotherapy Dose (방사선 선량)
+        "SR",        // Structured Report (구조화된 보고서)
+        "PR",        // Presentation State (프레젠테이션 상태)
+        "SEG",       // Segmentation (분할)
+        "KO",        // Key Object Selection (키 객체 선택)
+        "REG",       // Registration (정합)
+        "FID",       // Fiducials (기준점)
+    };
+
     private async Task LoadSeriesAsync(string studyInstanceUid)
     {
         IsLoading = true;
@@ -191,9 +208,26 @@ public sealed partial class TciaExplorerViewModel : ObservableRecipient
 
         try
         {
-            var seriesList = await _tciaService.GetSeriesAsync(studyInstanceUid);
-            SeriesList = new ObservableCollection<TciaSeriesDto>(seriesList);
-            StatusMessage = $"{seriesList.Count}개의 Series를 찾았습니다. / Found {seriesList.Count} series.";
+            var allSeries = await _tciaService.GetSeriesAsync(studyInstanceUid);
+
+            // 이미지가 없는 Modality 필터링
+            // Filter out modalities without image data
+            var imageSeriesList = allSeries
+                .Where(s => string.IsNullOrEmpty(s.Modality) || !NonImageModalities.Contains(s.Modality))
+                .ToList();
+
+            var filteredCount = allSeries.Count - imageSeriesList.Count;
+
+            SeriesList = new ObservableCollection<TciaSeriesDto>(imageSeriesList);
+
+            if (filteredCount > 0)
+            {
+                StatusMessage = $"{imageSeriesList.Count}개의 Series를 찾았습니다. ({filteredCount}개 비이미지 제외) / Found {imageSeriesList.Count} series. ({filteredCount} non-image excluded)";
+            }
+            else
+            {
+                StatusMessage = $"{imageSeriesList.Count}개의 Series를 찾았습니다. / Found {imageSeriesList.Count} series.";
+            }
         }
         catch (Exception ex)
         {

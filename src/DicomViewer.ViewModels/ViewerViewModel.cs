@@ -162,20 +162,6 @@ public sealed partial class ViewerViewModel : ObservableRecipient
         IsActive = true;
     }
 
-    public void LoadStudy(DicomStudyDto study)
-    {
-        PatientName = study.PatientName;
-        PatientId = study.PatientId;
-        StudyDescription = study.StudyDescription ?? string.Empty;
-
-        SeriesList = new ObservableCollection<DicomSeriesDto>(study.Series);
-
-        if (SeriesList.Count > 0)
-        {
-            SelectedSeries = SeriesList[0];
-        }
-    }
-
     /// <summary>
     /// 폴더에서 DICOM 파일 로드
     /// Load DICOM files from folder

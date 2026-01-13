@@ -63,6 +63,27 @@ WPF DICOM Viewer using **Clean Architecture** with 7 projects:
 ### TCIA Cache Location
 Downloaded DICOM files are cached at: `%LocalAppData%\DicomViewer\TciaCache\`
 
+### TCIA Non-Image Modality Filtering
+TCIA Explorer automatically filters out modalities that don't contain displayable image pixel data:
+
+```csharp
+// TciaExplorerViewModel.cs
+private static readonly HashSet<string> NonImageModalities = new(StringComparer.OrdinalIgnoreCase)
+{
+    "RTSTRUCT",  // Radiotherapy Structure Set
+    "RTPLAN",    // Radiotherapy Plan
+    "RTDOSE",    // Radiotherapy Dose
+    "SR",        // Structured Report
+    "PR",        // Presentation State
+    "SEG",       // Segmentation
+    "KO",        // Key Object Selection
+    "REG",       // Registration
+    "FID",       // Fiducials
+};
+```
+
+These modalities contain metadata or structure data (e.g., ROI contours for radiation therapy) but no pixel data that can be rendered as images.
+
 ## Common WPF Patterns Used
 
 ### Custom Control Icon Fonts

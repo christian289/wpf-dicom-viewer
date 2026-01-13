@@ -6,10 +6,6 @@
     <!-- ViewModel과 View를 자동으로 매핑하는 DataTemplate 정의 -->
     <!-- DataTemplate definitions for automatic ViewModel-View mapping -->
 
-    <DataTemplate DataType="{x:Type viewmodels:StudyListViewModel}">
-        <views:StudyListView />
-    </DataTemplate>
-
     <DataTemplate DataType="{x:Type viewmodels:ViewerViewModel}">
         <views:ViewerView />
     </DataTemplate>
