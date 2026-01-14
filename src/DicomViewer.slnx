@@ -1,10 +1,36 @@
 <Solution>
-  <Project Path="DicomViewer.Application/DicomViewer.Application.csproj" />
-  <Project Path="DicomViewer.Domain/DicomViewer.Domain.csproj" />
-  <Project Path="DicomViewer.Infrastructure/DicomViewer.Infrastructure.csproj" />
-  <Project Path="DicomViewer.Tests/DicomViewer.Tests.csproj" />
-  <Project Path="DicomViewer.UI/DicomViewer.UI.csproj" />
-  <Project Path="DicomViewer.ViewModels/DicomViewer.ViewModels.csproj" />
-  <Project Path="DicomViewer.WpfApp/DicomViewer.WpfApp.csproj" />
-  <Project Path="DicomViewer.WpfServices/DicomViewer.WpfServices.csproj" />
+  <!-- Core: 공통 도메인 및 애플리케이션 레이어 -->
+  <!-- Core: Common domain and application layers -->
+  <Folder Name="/Core/">
+    <Project Path="DicomViewer.Domain/DicomViewer.Domain.csproj" />
+    <Project Path="DicomViewer.Application/DicomViewer.Application.csproj" />
+  </Folder>
+  <Folder Name="/OpenSilver/App/">
+    <Project Path="DicomViewer.OpenSilverApp/DicomViewer.OpenSilverApp.Browser/DicomViewer.OpenSilverApp.Browser.csproj" />
+    <Project Path="DicomViewer.OpenSilverApp/DicomViewer.OpenSilverApp.Simulator/DicomViewer.OpenSilverApp.Simulator.csproj" />
+    <Project Path="DicomViewer.OpenSilverApp/DicomViewer.OpenSilverApp/DicomViewer.OpenSilverApp.csproj" />
+  </Folder>
+
+  <!-- WPF: Windows Presentation Foundation 프로젝트 -->
+  <!-- WPF: Windows Presentation Foundation projects -->
+  <Folder Name="/WPF/">
+    <Project Path="DicomViewer.ViewModels/DicomViewer.ViewModels.csproj" />
+    <Project Path="DicomViewer.Infrastructure/DicomViewer.Infrastructure.csproj" />
+    <Project Path="DicomViewer.UI/DicomViewer.UI.csproj" />
+    <Project Path="DicomViewer.WpfServices/DicomViewer.WpfServices.csproj" />
+    <Project Path="DicomViewer.WpfApp/DicomViewer.WpfApp.csproj" />
+    <Project Path="DicomViewer.Tests/DicomViewer.Tests.csproj" />
+  </Folder>
+
+  <!-- OpenSilver: WebAssembly 프로젝트 -->
+  <!-- OpenSilver: WebAssembly projects -->
+  <Folder Name="/OpenSilver/">
+    <Project Path="DicomViewer.OpenSilverServices/DicomViewer.OpenSilverServices.csproj" />
+    <Project Path="DicomViewer.OpenSilverUI/DicomViewer.OpenSilverUI.csproj" />
+    <Folder Name="/OpenSilver/App/">
+      <Project Path="DicomViewer.OpenSilverApp/DicomViewer.OpenSilverApp/DicomViewer.OpenSilverApp.csproj" />
+      <Project Path="DicomViewer.OpenSilverApp/DicomViewer.OpenSilverApp.Browser/DicomViewer.OpenSilverApp.Browser.csproj" />
+      <Project Path="DicomViewer.OpenSilverApp/DicomViewer.OpenSilverApp.Simulator/DicomViewer.OpenSilverApp.Simulator.csproj" />
+    </Folder>
+  </Folder>
 </Solution>

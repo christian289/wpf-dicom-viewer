@@ -6,6 +6,8 @@
 
   <ItemGroup>
     <PackageReference Include="fo-dicom.Imaging.Desktop" Version="5.2.5" />
+    <PackageReference Include="OpenTK" Version="4.9.4" />
+    <PackageReference Include="OpenTK.GLWpfControl" Version="4.3.4" />
     <PackageReference Include="SkiaSharp.Views.WPF" Version="3.119.1" />
   </ItemGroup>
 
