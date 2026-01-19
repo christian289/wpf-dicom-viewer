@@ -3,10 +3,21 @@
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-      xmlns:controls="clr-namespace:DicomViewer.OpenSilverUI.Controls;assembly=DicomViewer.OpenSilverUI"
+      xmlns:views="clr-namespace:DicomViewer.OpenSilverApp.Views"
+      xmlns:viewmodels="clr-namespace:DicomViewer.OpenSilverApp.ViewModels"
       mc:Ignorable="d"
-      Background="#1E1E1E"
-      Foreground="White">
+      Background="#1E1E1E">
+
+    <Page.Resources>
+        <!-- ViewModel-View 매핑 DataTemplates (x:Key 필수) -->
+        <!-- ViewModel-View mapping DataTemplates (x:Key required) -->
+        <DataTemplate x:Key="TciaExplorerViewTemplate">
+            <views:TciaExplorerView />
+        </DataTemplate>
+        <DataTemplate x:Key="ViewerViewTemplate">
+            <views:ViewerView />
+        </DataTemplate>
+    </Page.Resources>
 
     <Grid>
         <Grid.RowDefinitions>
@@ -15,8 +26,8 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Header -->
-        <Border Grid.Row="0" Background="#2D2D30" Padding="16,8">
+        <!-- ===== 상단 도구 모음 / Top Toolbar ===== -->
+        <Border Grid.Row="0" Background="#2D2D30" Padding="12,8">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
@@ -24,183 +35,66 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <TextBlock Grid.Column="0"
-                           Text="DICOM Viewer (OpenSilver)"
-                           FontSize="20"
-                           FontWeight="Bold"
-                           Foreground="White"
-                           VerticalAlignment="Center"/>
+                <!-- 왼쪽 로고 + 버튼들 / Left logo + buttons -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                    <!-- 로고 / Logo -->
+                    <TextBlock Text="&#xE8A1;"
+                               FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                               FontSize="24"
+                               Foreground="#0078D4"
+                               VerticalAlignment="Center"
+                               Margin="0,0,12,0" />
 
-                <StackPanel Grid.Column="2" Orientation="Horizontal">
-                    <Button Content="Test Connection"
-                            Command="{Binding TestConnectionCommand}"
-                            Margin="4,0"
-                            Padding="12,6"/>
-                    <Button Content="Load Collections"
-                            Command="{Binding LoadCollectionsCommand}"
-                            Margin="4,0"
-                            Padding="12,6"/>
+                    <Button Content="TCIA Explorer"
+                            Command="{Binding NavigateToTciaExplorerCommand}"
+                            Padding="12,6"
+                            Margin="0,0,4,0" />
+
+                    <Button Content="Viewer"
+                            Command="{Binding NavigateToViewerCommand}"
+                            Padding="12,6" />
+                </StackPanel>
+
+                <!-- 오른쪽 정보 / Right info -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="DICOM Viewer (OpenSilver)"
+                               Foreground="#AAAAAA"
+                               VerticalAlignment="Center"
+                               FontWeight="SemiBold" />
+                    <TextBlock Text="v2.0"
+                               Foreground="#666666"
+                               VerticalAlignment="Center"
+                               Margin="8,0,0,0" />
                 </StackPanel>
             </Grid>
         </Border>
 
-        <!-- Main Content -->
-        <Grid Grid.Row="1">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="300"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
+        <!-- 메인 콘텐츠 영역 / Main content area -->
+        <!-- OpenSilver에서는 DataType 기반 자동 매핑이 제한적이므로 코드비하인드에서 처리 -->
+        <!-- In OpenSilver, DataType-based auto mapping is limited, so handle in code-behind -->
+        <ContentControl x:Name="MainContent" Grid.Row="1" />
 
-            <!-- Left Panel - TCIA Explorer -->
-            <Border Grid.Column="0" Background="#252526" BorderBrush="#333333" BorderThickness="0,0,1,0">
-                <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <StackPanel Margin="8">
-                        <!-- Collections -->
-                        <TextBlock Text="Collections" FontWeight="Bold" Margin="0,0,0,4"/>
-                        <ListBox ItemsSource="{Binding Collections}"
-                                 SelectedItem="{Binding SelectedCollection, Mode=TwoWay}"
-                                 Height="120"
-                                 Background="#1E1E1E"
-                                 Foreground="White">
-                            <ListBox.ItemTemplate>
-                                <DataTemplate>
-                                    <TextBlock Text="{Binding Collection}" Foreground="White"/>
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
-
-                        <!-- Patients -->
-                        <TextBlock Text="Patients" FontWeight="Bold" Margin="0,12,0,4"/>
-                        <ListBox ItemsSource="{Binding Patients}"
-                                 SelectedItem="{Binding SelectedPatient, Mode=TwoWay}"
-                                 Height="120"
-                                 Background="#1E1E1E"
-                                 Foreground="White">
-                            <ListBox.ItemTemplate>
-                                <DataTemplate>
-                                    <TextBlock Text="{Binding PatientId}" Foreground="White"/>
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
-
-                        <!-- Studies -->
-                        <TextBlock Text="Studies" FontWeight="Bold" Margin="0,12,0,4"/>
-                        <ListBox ItemsSource="{Binding Studies}"
-                                 SelectedItem="{Binding SelectedStudy, Mode=TwoWay}"
-                                 Height="120"
-                                 Background="#1E1E1E"
-                                 Foreground="White">
-                            <ListBox.ItemTemplate>
-                                <DataTemplate>
-                                    <StackPanel>
-                                        <TextBlock Text="{Binding StudyDescription}" Foreground="White"/>
-                                        <TextBlock Text="{Binding StudyDate}" FontSize="10" Foreground="Gray"/>
-                                    </StackPanel>
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
-
-                        <!-- Series -->
-                        <TextBlock Text="Series" FontWeight="Bold" Margin="0,12,0,4"/>
-                        <ListBox ItemsSource="{Binding SeriesList}"
-                                 SelectedItem="{Binding SelectedSeries, Mode=TwoWay}"
-                                 Height="150"
-                                 Background="#1E1E1E"
-                                 Foreground="White">
-                            <ListBox.ItemTemplate>
-                                <DataTemplate>
-                                    <StackPanel>
-                                        <TextBlock Foreground="White">
-                                            <Run Text="{Binding Modality}"/>
-                                            <Run Text=" - "/>
-                                            <Run Text="{Binding ImageCount}"/>
-                                            <Run Text=" images"/>
-                                        </TextBlock>
-                                        <TextBlock Text="{Binding SeriesDescription}" FontSize="10" Foreground="Gray"/>
-                                    </StackPanel>
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
-
-                        <!-- Download Button -->
-                        <Button Content="Download Selected Series"
-                                Command="{Binding DownloadSeriesCommand}"
-                                Margin="0,12,0,0"
-                                Padding="12,8"
-                                HorizontalAlignment="Stretch"/>
-
-                        <!-- Download Progress -->
-                        <ProgressBar Value="{Binding DownloadProgress}"
-                                     Maximum="100"
-                                     Height="4"
-                                     Margin="0,8,0,0"
-                                     Visibility="{Binding IsLoading}"/>
-                        <TextBlock Text="{Binding DownloadStatus}"
-                                   FontSize="10"
-                                   Foreground="Gray"
-                                   Margin="0,4,0,0"/>
-                    </StackPanel>
-                </ScrollViewer>
-            </Border>
-
-            <!-- Right Panel - Image Viewer -->
-            <Grid Grid.Column="1">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
-
-                <!-- Toolbar -->
-                <Border Grid.Row="0" Background="#2D2D30" Padding="8">
-                    <StackPanel Orientation="Horizontal">
-                        <Button Content="Reset" Command="{Binding ResetViewCommand}" Margin="4,0" Padding="8,4"/>
-                        <Button Content="Rotate Left" Command="{Binding RotateLeftCommand}" Margin="4,0" Padding="8,4"/>
-                        <Button Content="Rotate Right" Command="{Binding RotateRightCommand}" Margin="4,0" Padding="8,4"/>
-
-                        <TextBlock Text="W/L:" VerticalAlignment="Center" Margin="16,0,4,0"/>
-                        <TextBlock Text="{Binding WindowWidth, StringFormat=N0}" VerticalAlignment="Center" Width="40"/>
-                        <TextBlock Text="/" VerticalAlignment="Center"/>
-                        <TextBlock Text="{Binding WindowCenter, StringFormat=N0}" VerticalAlignment="Center" Width="40"/>
-
-                        <TextBlock Text="Zoom:" VerticalAlignment="Center" Margin="16,0,4,0"/>
-                        <TextBlock Text="{Binding ZoomFactor, StringFormat=P0}" VerticalAlignment="Center"/>
-                    </StackPanel>
-                </Border>
-
-                <!-- Image Display Area -->
-                <Border Grid.Row="1" Background="Black">
-                    <Grid>
-                        <TextBlock Text="Select a series and download to view DICOM images"
-                                   HorizontalAlignment="Center"
-                                   VerticalAlignment="Center"
-                                   Foreground="Gray"
-                                   FontSize="14"/>
-                    </Grid>
-                </Border>
-            </Grid>
-        </Grid>
-
-        <!-- Status Bar -->
-        <Border Grid.Row="2" Background="#007ACC" Padding="8,4">
+        <!-- ===== 하단 상태 표시줄 / Bottom status bar ===== -->
+        <Border Grid.Row="2" Padding="12,6" Background="#007ACC">
             <Grid>
-                <TextBlock Text="{Binding StatusMessage}" Foreground="White" FontSize="12"/>
-                <TextBlock Text="OpenSilver DICOM Viewer"
-                           HorizontalAlignment="Right"
-                           Foreground="White"
-                           FontSize="12"/>
-            </Grid>
-        </Border>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
 
-        <!-- Loading Overlay -->
-        <Border Grid.RowSpan="3"
-                Background="#80000000"
-                Visibility="{Binding IsLoading}">
-            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                <TextBlock Text="Loading..."
-                           FontSize="18"
+                <TextBlock Grid.Column="0"
+                           Text="{Binding StatusMessage}"
                            Foreground="White"
-                           HorizontalAlignment="Center"/>
-            </StackPanel>
+                           FontSize="12"
+                           VerticalAlignment="Center" />
+
+                <TextBlock Grid.Column="1"
+                           Text="OpenSilver WebAssembly"
+                           Foreground="White"
+                           FontSize="12"
+                           Opacity="0.7"
+                           VerticalAlignment="Center" />
+            </Grid>
         </Border>
     </Grid>
 </Page>
