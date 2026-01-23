@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using DicomViewer.Domain.ValueObjects;
 
 namespace DicomViewer.UI.Controls;
@@ -172,21 +173,23 @@ public sealed class RulerOverlay : FrameworkElement
     {
         if (d is RulerOverlay overlay)
         {
-            if (e.OldValue is ObservableCollection<MeasurementLine> oldCollection)
+            // WeakEventManager 사용으로 메모리 누수 방지
+            // Use WeakEventManager to prevent memory leak
+            if (e.OldValue is INotifyCollectionChanged oldCollection)
             {
-                oldCollection.CollectionChanged -= overlay.OnMeasurementsCollectionChanged;
+                CollectionChangedEventManager.RemoveHandler(oldCollection, overlay.OnMeasurementsCollectionChanged);
             }
 
-            if (e.NewValue is ObservableCollection<MeasurementLine> newCollection)
+            if (e.NewValue is INotifyCollectionChanged newCollection)
             {
-                newCollection.CollectionChanged += overlay.OnMeasurementsCollectionChanged;
+                CollectionChangedEventManager.AddHandler(newCollection, overlay.OnMeasurementsCollectionChanged);
             }
 
             overlay.InvalidateVisual();
         }
     }
 
-    private void OnMeasurementsCollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+    private void OnMeasurementsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
         InvalidateVisual();
     }

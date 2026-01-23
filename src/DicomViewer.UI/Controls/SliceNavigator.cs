@@ -167,6 +167,11 @@ public sealed class SliceNavigator : Control
 
     #endregion
 
+    // 캐시된 템플릿 자식 요소 (이벤트 핸들러 관리용)
+    // Cached template child elements (for event handler management)
+    private ListBox? _thumbnailList;
+    private Slider? _slider;
+
     private static void OnSelectedIndexChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
         if (d is SliceNavigator navigator)
@@ -183,18 +188,29 @@ public sealed class SliceNavigator : Control
     {
         base.OnApplyTemplate();
 
-        // ListBox 찾기 및 이벤트 연결
-        // Find ListBox and wire events
-        if (GetTemplateChild("PART_ThumbnailList") is ListBox listBox)
+        // 기존 핸들러 해제 (메모리 누수 방지)
+        // Unsubscribe existing handlers (prevent memory leak)
+        if (_thumbnailList is not null)
         {
-            listBox.SelectionChanged += OnThumbnailListSelectionChanged;
+            _thumbnailList.SelectionChanged -= OnThumbnailListSelectionChanged;
+        }
+        if (_slider is not null)
+        {
+            _slider.ValueChanged -= OnSliderValueChanged;
         }
 
-        // Slider 찾기 및 이벤트 연결
-        // Find Slider and wire events
-        if (GetTemplateChild("PART_Slider") is Slider slider)
+        // 새 요소 캐싱 및 핸들러 등록
+        // Cache new elements and register handlers
+        _thumbnailList = GetTemplateChild("PART_ThumbnailList") as ListBox;
+        _slider = GetTemplateChild("PART_Slider") as Slider;
+
+        if (_thumbnailList is not null)
         {
-            slider.ValueChanged += OnSliderValueChanged;
+            _thumbnailList.SelectionChanged += OnThumbnailListSelectionChanged;
+        }
+        if (_slider is not null)
+        {
+            _slider.ValueChanged += OnSliderValueChanged;
         }
     }
 

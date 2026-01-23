@@ -28,10 +28,48 @@ public sealed class SkiaRenderService : IDisposable
     }
 
     /// <summary>
+    /// 8비트 그레이스케일 픽셀 데이터를 콜백 패턴으로 안전하게 사용 (권장)
+    /// Safely use 8-bit grayscale pixel data with callback pattern (recommended)
+    /// </summary>
+    /// <remarks>
+    /// 캐시된 비트맵을 직접 반환하지 않고 콜백 내에서만 사용하도록 하여
+    /// 외부에서 실수로 Dispose하거나 수정하는 것을 방지합니다.
+    /// Prevents accidental Dispose or modification by external code
+    /// by only allowing access within the callback.
+    /// </remarks>
+    public void UseGrayscaleBitmap(byte[] pixels, int width, int height, Action<SKBitmap> action)
+    {
+        EnsureCachedBitmap(pixels, width, height);
+        action(_cachedBitmap!);
+    }
+
+    /// <summary>
+    /// 8비트 그레이스케일 픽셀 데이터를 콜백 패턴으로 안전하게 사용하고 결과 반환
+    /// Safely use 8-bit grayscale pixel data with callback pattern and return result
+    /// </summary>
+    public TResult UseGrayscaleBitmap<TResult>(byte[] pixels, int width, int height, Func<SKBitmap, TResult> func)
+    {
+        EnsureCachedBitmap(pixels, width, height);
+        return func(_cachedBitmap!);
+    }
+
+    /// <summary>
     /// 8비트 그레이스케일 픽셀 데이터를 SKBitmap으로 변환 (GPU 가속)
     /// Convert 8-bit grayscale pixel data to SKBitmap (GPU accelerated)
     /// </summary>
-    public SKBitmap CreateGrayscaleBitmap(byte[] pixels, int width, int height)
+    /// <remarks>
+    /// ⚠️ 주의: 반환된 비트맵은 내부 캐시입니다. Dispose하지 마세요.
+    /// ⚠️ WARNING: Returned bitmap is internally cached. Do NOT dispose it.
+    /// 안전한 사용을 위해 UseGrayscaleBitmap 메서드 사용을 권장합니다.
+    /// For safe usage, prefer UseGrayscaleBitmap method instead.
+    /// </remarks>
+    internal SKBitmap CreateGrayscaleBitmap(byte[] pixels, int width, int height)
+    {
+        EnsureCachedBitmap(pixels, width, height);
+        return _cachedBitmap!;
+    }
+
+    private void EnsureCachedBitmap(byte[] pixels, int width, int height)
     {
         // 캐시된 비트맵 크기가 다르면 새로 생성
         // Create new bitmap if cached size differs
@@ -53,8 +91,6 @@ public sealed class SkiaRenderService : IDisposable
                 Buffer.MemoryCopy(srcPtr, dstPtr, pixels.Length, pixels.Length);
             }
         }
-
-        return _cachedBitmap;
     }
 
     /// <summary>

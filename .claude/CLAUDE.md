@@ -186,6 +186,108 @@ finally
 }
 ```
 
+### Brush Freeze for Performance
+Always freeze brushes in DependencyProperty default values and XAML resources:
+```csharp
+// C# - Static constructor pattern
+// C# - Static 생성자 패턴
+private static readonly Brush DefaultHoverBackground;
+
+static MyControl()
+{
+    DefaultHoverBackground = new SolidColorBrush(Color.FromRgb(62, 62, 66));
+    DefaultHoverBackground.Freeze();
+}
+
+public static readonly DependencyProperty HoverBackgroundProperty =
+    DependencyProperty.Register(nameof(HoverBackground), typeof(Brush), typeof(MyControl),
+        new PropertyMetadata(DefaultHoverBackground));
+```
+```xml
+<!-- XAML - po:Freeze="True" pattern -->
+<SolidColorBrush x:Key="PrimaryBrush" po:Freeze="True" Color="#0078D4"
+    xmlns:po="http://schemas.microsoft.com/winfx/2006/xaml/presentation/options" />
+```
+
+### Transform Object Caching
+Cache Transform objects instead of recreating them on every update:
+```csharp
+// 캐시된 Transform 객체 (성능 최적화)
+// Cached Transform objects (performance optimization)
+private TransformGroup? _transformGroup;
+private ScaleTransform? _zoomTransform;
+private TranslateTransform? _panTransform;
+
+private void UpdateTransform()
+{
+    // 최초 생성 시에만 객체 할당
+    // Allocate objects only on first creation
+    if (_transformGroup is null)
+    {
+        _zoomTransform = new ScaleTransform();
+        _panTransform = new TranslateTransform();
+        _transformGroup = new TransformGroup();
+        _transformGroup.Children.Add(_zoomTransform);
+        _transformGroup.Children.Add(_panTransform);
+        _imageElement.RenderTransform = _transformGroup;
+    }
+
+    // 값만 업데이트 (객체 재생성 없음)
+    // Update values only (no object recreation)
+    _zoomTransform!.ScaleX = ZoomFactor;
+    _zoomTransform.ScaleY = ZoomFactor;
+    _panTransform!.X = PanX;
+    _panTransform.Y = PanY;
+}
+```
+
+### WeakEventManager for Collection Events
+Use `CollectionChangedEventManager` to prevent memory leaks when subscribing to collection events:
+```csharp
+private static void OnItemsSourceChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+{
+    if (d is MyControl control)
+    {
+        // WeakEventManager 사용으로 메모리 누수 방지
+        // Use WeakEventManager to prevent memory leak
+        if (e.OldValue is INotifyCollectionChanged oldCollection)
+        {
+            CollectionChangedEventManager.RemoveHandler(oldCollection, control.OnCollectionChanged);
+        }
+        if (e.NewValue is INotifyCollectionChanged newCollection)
+        {
+            CollectionChangedEventManager.AddHandler(newCollection, control.OnCollectionChanged);
+        }
+    }
+}
+```
+
+### Template Child Event Handler Management
+Properly manage event handlers in `OnApplyTemplate` to prevent memory leaks:
+```csharp
+private ListBox? _listBox;
+
+public override void OnApplyTemplate()
+{
+    base.OnApplyTemplate();
+
+    // 기존 핸들러 해제 (메모리 누수 방지)
+    // Unsubscribe existing handlers (prevent memory leak)
+    if (_listBox is not null)
+    {
+        _listBox.SelectionChanged -= OnSelectionChanged;
+    }
+
+    // 새 요소 캐싱 및 핸들러 등록
+    // Cache new elements and register handlers
+    _listBox = GetTemplateChild("PART_ListBox") as ListBox;
+    if (_listBox is not null)
+    {
+        _listBox.SelectionChanged += OnSelectionChanged;
+    }
+}
+```
+
 ## Custom Controls
 
 ### Available Controls

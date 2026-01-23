@@ -264,6 +264,14 @@ public class DicomImageViewer : Control
     private Point _lastMousePosition;
     private bool _isDragging;
 
+    // 캐시된 Transform 객체 (성능 최적화)
+    // Cached Transform objects (performance optimization)
+    private TransformGroup? _transformGroup;
+    private ScaleTransform? _flipTransform;
+    private RotateTransform? _rotateTransform;
+    private ScaleTransform? _zoomTransform;
+    private TranslateTransform? _panTransform;
+
     private static void OnTransformChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
         if (d is DicomImageViewer viewer)
@@ -364,36 +372,35 @@ public class DicomImageViewer : Control
     {
         if (_imageElement is null) return;
 
-        var transformGroup = new TransformGroup();
-
-        // RenderTransformOrigin="0.5,0.5"가 설정되어 있으므로 중심점 지정 불필요
-        // No need to specify center point since RenderTransformOrigin="0.5,0.5" is set
-
-        // 1. 반전 (Flip) - 먼저 적용
-        // 1. Flip - applied first
-        if (FlipHorizontal || FlipVertical)
+        // 최초 생성 시에만 객체 할당 (성능 최적화)
+        // Allocate objects only on first creation (performance optimization)
+        if (_transformGroup is null)
         {
-            var scaleX = FlipHorizontal ? -1 : 1;
-            var scaleY = FlipVertical ? -1 : 1;
-            transformGroup.Children.Add(new ScaleTransform(scaleX, scaleY));
+            _flipTransform = new ScaleTransform();
+            _rotateTransform = new RotateTransform();
+            _zoomTransform = new ScaleTransform();
+            _panTransform = new TranslateTransform();
+
+            _transformGroup = new TransformGroup();
+            // RenderTransformOrigin="0.5,0.5"가 설정되어 있으므로 중심점 지정 불필요
+            // No need to specify center point since RenderTransformOrigin="0.5,0.5" is set
+            _transformGroup.Children.Add(_flipTransform);   // 1. Flip - 먼저 적용 / applied first
+            _transformGroup.Children.Add(_rotateTransform); // 2. Rotation
+            _transformGroup.Children.Add(_zoomTransform);   // 3. Zoom
+            _transformGroup.Children.Add(_panTransform);    // 4. Pan - 마지막에 적용 / applied last
+
+            _imageElement.RenderTransform = _transformGroup;
         }
 
-        // 2. 회전 (Rotation)
-        // 2. Rotation
-        if (RotationAngle != 0)
-        {
-            transformGroup.Children.Add(new RotateTransform(RotationAngle));
-        }
-
-        // 3. 확대/축소 (Zoom)
-        // 3. Zoom
-        transformGroup.Children.Add(new ScaleTransform(ZoomFactor, ZoomFactor));
-
-        // 4. 팬 (Pan) - 마지막에 적용
-        // 4. Pan - applied last
-        transformGroup.Children.Add(new TranslateTransform(PanX, PanY));
-
-        _imageElement.RenderTransform = transformGroup;
+        // 값만 업데이트 (객체 재생성 없음)
+        // Update values only (no object recreation)
+        _flipTransform!.ScaleX = FlipHorizontal ? -1 : 1;
+        _flipTransform.ScaleY = FlipVertical ? -1 : 1;
+        _rotateTransform!.Angle = RotationAngle;
+        _zoomTransform!.ScaleX = ZoomFactor;
+        _zoomTransform.ScaleY = ZoomFactor;
+        _panTransform!.X = PanX;
+        _panTransform.Y = PanY;
     }
 
     /// <summary>

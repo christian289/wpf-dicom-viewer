@@ -6,11 +6,23 @@ namespace DicomViewer.UI.Controls;
 /// </summary>
 public sealed class LoadingIndicator : Control
 {
+    // Freeze된 기본 브러시 (성능 최적화)
+    // Frozen default brushes (performance optimization)
+    private static readonly Brush DefaultSpinnerColor;
+    private static readonly Brush DefaultTrackColor;
+
     static LoadingIndicator()
     {
         DefaultStyleKeyProperty.OverrideMetadata(
             typeof(LoadingIndicator),
             new FrameworkPropertyMetadata(typeof(LoadingIndicator)));
+
+        // Frozen 브러시 생성
+        // Create frozen brushes
+        DefaultSpinnerColor = new SolidColorBrush(Color.FromRgb(0, 120, 212));
+        DefaultSpinnerColor.Freeze();
+        DefaultTrackColor = new SolidColorBrush(Color.FromRgb(62, 62, 66));
+        DefaultTrackColor.Freeze();
     }
 
     #region Dependency Properties
@@ -67,7 +79,7 @@ public sealed class LoadingIndicator : Control
             nameof(SpinnerColor),
             typeof(Brush),
             typeof(LoadingIndicator),
-            new PropertyMetadata(new SolidColorBrush(Color.FromRgb(0, 120, 212))));
+            new PropertyMetadata(DefaultSpinnerColor));
 
     public Brush SpinnerColor
     {
@@ -82,7 +94,7 @@ public sealed class LoadingIndicator : Control
             nameof(TrackColor),
             typeof(Brush),
             typeof(LoadingIndicator),
-            new PropertyMetadata(new SolidColorBrush(Color.FromRgb(62, 62, 66))));
+            new PropertyMetadata(DefaultTrackColor));
 
     public Brush TrackColor
     {

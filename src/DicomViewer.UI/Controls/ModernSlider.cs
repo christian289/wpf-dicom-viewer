@@ -6,11 +6,26 @@ namespace DicomViewer.UI.Controls;
 /// </summary>
 public sealed class ModernSlider : Slider
 {
+    // Freeze된 기본 브러시 (성능 최적화)
+    // Frozen default brushes (performance optimization)
+    private static readonly Brush DefaultTrackBackground;
+    private static readonly Brush DefaultProgressFill;
+    private static readonly Brush DefaultThumbBorderBrush;
+
     static ModernSlider()
     {
         DefaultStyleKeyProperty.OverrideMetadata(
             typeof(ModernSlider),
             new FrameworkPropertyMetadata(typeof(ModernSlider)));
+
+        // Frozen 브러시 생성
+        // Create frozen brushes
+        DefaultTrackBackground = new SolidColorBrush(Color.FromRgb(62, 62, 66));
+        DefaultTrackBackground.Freeze();
+        DefaultProgressFill = new SolidColorBrush(Color.FromRgb(0, 120, 212));
+        DefaultProgressFill.Freeze();
+        DefaultThumbBorderBrush = new SolidColorBrush(Color.FromRgb(0, 120, 212));
+        DefaultThumbBorderBrush.Freeze();
     }
 
     #region Dependency Properties
@@ -37,7 +52,7 @@ public sealed class ModernSlider : Slider
             nameof(TrackBackground),
             typeof(Brush),
             typeof(ModernSlider),
-            new PropertyMetadata(new SolidColorBrush(Color.FromRgb(62, 62, 66))));
+            new PropertyMetadata(DefaultTrackBackground));
 
     public Brush TrackBackground
     {
@@ -52,7 +67,7 @@ public sealed class ModernSlider : Slider
             nameof(ProgressFill),
             typeof(Brush),
             typeof(ModernSlider),
-            new PropertyMetadata(new SolidColorBrush(Color.FromRgb(0, 120, 212))));
+            new PropertyMetadata(DefaultProgressFill));
 
     public Brush ProgressFill
     {
@@ -97,7 +112,7 @@ public sealed class ModernSlider : Slider
             nameof(ThumbBorderBrush),
             typeof(Brush),
             typeof(ModernSlider),
-            new PropertyMetadata(new SolidColorBrush(Color.FromRgb(0, 120, 212))));
+            new PropertyMetadata(DefaultThumbBorderBrush));
 
     public Brush ThumbBorderBrush
     {

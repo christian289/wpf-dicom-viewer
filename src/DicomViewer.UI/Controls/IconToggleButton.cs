@@ -8,11 +8,23 @@ namespace DicomViewer.UI.Controls;
 /// </summary>
 public sealed class IconToggleButton : ToggleButton
 {
+    // Freeze된 기본 브러시 (성능 최적화)
+    // Frozen default brushes (performance optimization)
+    private static readonly Brush DefaultHoverBackground;
+    private static readonly Brush DefaultCheckedBackground;
+
     static IconToggleButton()
     {
         DefaultStyleKeyProperty.OverrideMetadata(
             typeof(IconToggleButton),
             new FrameworkPropertyMetadata(typeof(IconToggleButton)));
+
+        // Frozen 브러시 생성
+        // Create frozen brushes
+        DefaultHoverBackground = new SolidColorBrush(Color.FromRgb(62, 62, 66));
+        DefaultHoverBackground.Freeze();
+        DefaultCheckedBackground = new SolidColorBrush(Color.FromRgb(0, 120, 212));
+        DefaultCheckedBackground.Freeze();
     }
 
     #region Dependency Properties
@@ -114,7 +126,7 @@ public sealed class IconToggleButton : ToggleButton
             nameof(HoverBackground),
             typeof(Brush),
             typeof(IconToggleButton),
-            new PropertyMetadata(new SolidColorBrush(Color.FromRgb(62, 62, 66))));
+            new PropertyMetadata(DefaultHoverBackground));
 
     public Brush HoverBackground
     {
@@ -129,7 +141,7 @@ public sealed class IconToggleButton : ToggleButton
             nameof(CheckedBackground),
             typeof(Brush),
             typeof(IconToggleButton),
-            new PropertyMetadata(new SolidColorBrush(Color.FromRgb(0, 120, 212))));
+            new PropertyMetadata(DefaultCheckedBackground));
 
     public Brush CheckedBackground
     {
