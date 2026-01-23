@@ -40,7 +40,21 @@
       "Bash(ls:*)",
       "Bash(python -m json.tool:*)",
       "Bash(find:*)",
-      "Bash(sort:*)"
+      "Bash(sort:*)",
+      "mcp__plugin_wpf-dev-pack_serena__get_current_config",
+      "mcp__plugin_serena_serena__get_current_config",
+      "mcp__plugin_wpf-dev-pack_serena__list_memories",
+      "mcp__plugin_wpf-dev-pack_serena__activate_project",
+      "mcp__plugin_wpf-dev-pack_serena__check_onboarding_performed",
+      "mcp__plugin_wpf-dev-pack_serena__list_dir",
+      "mcp__sequential-thinking__sequentialthinking",
+      "Bash(dotnet workload repair:*)",
+      "Bash(dotnet workload:*)",
+      "Bash(dotnet --version:*)",
+      "Bash(dotnet --list-sdks:*)",
+      "Bash(where:*)",
+      "Bash(reg query:*)",
+      "Bash(findstr:*)"
     ]
   }
 }
