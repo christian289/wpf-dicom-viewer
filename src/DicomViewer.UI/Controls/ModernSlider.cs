@@ -6,26 +6,18 @@ namespace DicomViewer.UI.Controls;
 /// </summary>
 public sealed class ModernSlider : Slider
 {
-    // Freeze된 기본 브러시 (성능 최적화)
-    // Frozen default brushes (performance optimization)
-    private static readonly Brush DefaultTrackBackground;
-    private static readonly Brush DefaultProgressFill;
-    private static readonly Brush DefaultThumbBorderBrush;
+    // Freeze된 기본(폴백) 브러시: 호스트가 테마를 제공하지 않을 때 사용. 정적 필드 초기화로 DP 기본값에 안전하게 사용된다
+    // Frozen default (fallback) brushes used when the host provides no theme; static field initializers make them safe as DP defaults
+    private static readonly Brush DefaultTrackBackground = BrushFactory.Frozen(62, 62, 66);
+    private static readonly Brush DefaultProgressFill = BrushFactory.Frozen(0, 120, 212);
+    private static readonly Brush DefaultThumbBackground = BrushFactory.Frozen(255, 255, 255);
+    private static readonly Brush DefaultThumbBorderBrush = BrushFactory.Frozen(0, 120, 212);
 
     static ModernSlider()
     {
         DefaultStyleKeyProperty.OverrideMetadata(
             typeof(ModernSlider),
             new FrameworkPropertyMetadata(typeof(ModernSlider)));
-
-        // Frozen 브러시 생성
-        // Create frozen brushes
-        DefaultTrackBackground = new SolidColorBrush(Color.FromRgb(62, 62, 66));
-        DefaultTrackBackground.Freeze();
-        DefaultProgressFill = new SolidColorBrush(Color.FromRgb(0, 120, 212));
-        DefaultProgressFill.Freeze();
-        DefaultThumbBorderBrush = new SolidColorBrush(Color.FromRgb(0, 120, 212));
-        DefaultThumbBorderBrush.Freeze();
     }
 
     #region Dependency Properties
@@ -97,7 +89,7 @@ public sealed class ModernSlider : Slider
             nameof(ThumbBackground),
             typeof(Brush),
             typeof(ModernSlider),
-            new PropertyMetadata(Brushes.White));
+            new PropertyMetadata(DefaultThumbBackground));
 
     public Brush ThumbBackground
     {

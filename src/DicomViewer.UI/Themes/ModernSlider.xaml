@@ -1,9 +1,8 @@
-<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:controls="clr-namespace:DicomViewer.UI.Controls">
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:controls="clr-namespace:DicomViewer.UI.Controls">
 
-    <!-- Thumb 스타일 / Thumb style -->
-    <Style x:Key="ModernSliderThumb" TargetType="{x:Type Thumb}">
+    <!--  Thumb 스타일 / Thumb style  -->
+    <Style x:Key="ModernSliderThumb"
+           TargetType="{x:Type Thumb}">
         <Setter Property="SnapsToDevicePixels" Value="True" />
         <Setter Property="OverridesDefaultStyle" Value="True" />
         <Setter Property="Template">
@@ -20,7 +19,7 @@
                             <ScaleTransform x:Name="ThumbScale" ScaleX="1" ScaleY="1" />
                         </Ellipse.RenderTransform>
                         <Ellipse.Effect>
-                            <DropShadowEffect Color="Black" BlurRadius="4" ShadowDepth="1" Opacity="0.3" />
+                            <DropShadowEffect BlurRadius="4" ShadowDepth="1" Opacity="0.3" Color="Black" />
                         </Ellipse.Effect>
                     </Ellipse>
                     <ControlTemplate.Triggers>
@@ -28,16 +27,12 @@
                             <Trigger.EnterActions>
                                 <BeginStoryboard>
                                     <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="ThumbScale"
-                                                         Storyboard.TargetProperty="ScaleX"
-                                                         To="1.2" Duration="0:0:0.15">
+                                        <DoubleAnimation Storyboard.TargetName="ThumbScale" Storyboard.TargetProperty="ScaleX" To="1.2" Duration="0:0:0.15">
                                             <DoubleAnimation.EasingFunction>
                                                 <CubicEase EasingMode="EaseOut" />
                                             </DoubleAnimation.EasingFunction>
                                         </DoubleAnimation>
-                                        <DoubleAnimation Storyboard.TargetName="ThumbScale"
-                                                         Storyboard.TargetProperty="ScaleY"
-                                                         To="1.2" Duration="0:0:0.15">
+                                        <DoubleAnimation Storyboard.TargetName="ThumbScale" Storyboard.TargetProperty="ScaleY" To="1.2" Duration="0:0:0.15">
                                             <DoubleAnimation.EasingFunction>
                                                 <CubicEase EasingMode="EaseOut" />
                                             </DoubleAnimation.EasingFunction>
@@ -48,16 +43,12 @@
                             <Trigger.ExitActions>
                                 <BeginStoryboard>
                                     <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="ThumbScale"
-                                                         Storyboard.TargetProperty="ScaleX"
-                                                         To="1" Duration="0:0:0.15">
+                                        <DoubleAnimation Storyboard.TargetName="ThumbScale" Storyboard.TargetProperty="ScaleX" To="1" Duration="0:0:0.15">
                                             <DoubleAnimation.EasingFunction>
                                                 <CubicEase EasingMode="EaseOut" />
                                             </DoubleAnimation.EasingFunction>
                                         </DoubleAnimation>
-                                        <DoubleAnimation Storyboard.TargetName="ThumbScale"
-                                                         Storyboard.TargetProperty="ScaleY"
-                                                         To="1" Duration="0:0:0.15">
+                                        <DoubleAnimation Storyboard.TargetName="ThumbScale" Storyboard.TargetProperty="ScaleY" To="1" Duration="0:0:0.15">
                                             <DoubleAnimation.EasingFunction>
                                                 <CubicEase EasingMode="EaseOut" />
                                             </DoubleAnimation.EasingFunction>
@@ -67,7 +58,7 @@
                             </Trigger.ExitActions>
                         </Trigger>
                         <Trigger Property="IsDragging" Value="True">
-                            <Setter TargetName="PART_Thumb" Property="Fill" Value="#0078D4" />
+                            <Setter TargetName="PART_Thumb" Property="Fill" Value="{DynamicResource AccentFillColorDefaultBrush}" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -75,8 +66,9 @@
         </Setter>
     </Style>
 
-    <!-- Repeat Button (투명) / Repeat Button (transparent) -->
-    <Style x:Key="SliderRepeatButtonTransparent" TargetType="{x:Type RepeatButton}">
+    <!--  Repeat Button (투명) / Repeat Button (transparent)  -->
+    <Style x:Key="SliderRepeatButtonTransparent"
+           TargetType="{x:Type RepeatButton}">
         <Setter Property="OverridesDefaultStyle" Value="True" />
         <Setter Property="IsTabStop" Value="False" />
         <Setter Property="Focusable" Value="False" />
@@ -89,15 +81,16 @@
         </Setter>
     </Style>
 
-    <!-- Horizontal Slider Template -->
-    <ControlTemplate x:Key="HorizontalModernSlider" TargetType="{x:Type controls:ModernSlider}">
+    <!--  Horizontal Slider Template  -->
+    <ControlTemplate x:Key="HorizontalModernSlider"
+                     TargetType="{x:Type controls:ModernSlider}">
         <Grid VerticalAlignment="Center">
-            <!-- 배경 트랙 / Background track -->
+            <!--  배경 트랙 / Background track  -->
             <Border x:Name="PART_TrackBackground"
                     Height="{TemplateBinding TrackHeight}"
+                    VerticalAlignment="Center"
                     Background="{TemplateBinding TrackBackground}"
-                    CornerRadius="2"
-                    VerticalAlignment="Center" />
+                    CornerRadius="2" />
 
             <Track x:Name="PART_Track">
                 <Track.DecreaseRepeatButton>
@@ -113,26 +106,25 @@
                 </Track.Thumb>
             </Track>
 
-            <!-- 진행 트랙 / Progress track -->
-            <Border x:Name="PART_SelectionRange"
+            <!--  진행 트랙 / Progress track  -->
+            <Border x:Name="PART_SelectionRange" Width="0"
                     Height="{TemplateBinding TrackHeight}"
+                    HorizontalAlignment="Left" VerticalAlignment="Center"
                     Background="{TemplateBinding ProgressFill}"
-                    CornerRadius="2"
-                    HorizontalAlignment="Left"
-                    VerticalAlignment="Center"
-                    Width="0" />
+                    CornerRadius="2" />
         </Grid>
     </ControlTemplate>
 
-    <!-- Vertical Slider Template -->
-    <ControlTemplate x:Key="VerticalModernSlider" TargetType="{x:Type controls:ModernSlider}">
+    <!--  Vertical Slider Template  -->
+    <ControlTemplate x:Key="VerticalModernSlider"
+                     TargetType="{x:Type controls:ModernSlider}">
         <Grid HorizontalAlignment="Center">
-            <!-- 배경 트랙 / Background track -->
+            <!--  배경 트랙 / Background track  -->
             <Border x:Name="PART_TrackBackground"
                     Width="{TemplateBinding TrackHeight}"
+                    HorizontalAlignment="Center"
                     Background="{TemplateBinding TrackBackground}"
-                    CornerRadius="2"
-                    HorizontalAlignment="Center" />
+                    CornerRadius="2" />
 
             <Track x:Name="PART_Track">
                 <Track.DecreaseRepeatButton>
@@ -152,10 +144,10 @@
 
     <Style TargetType="{x:Type controls:ModernSlider}">
         <Setter Property="Background" Value="Transparent" />
-        <Setter Property="TrackBackground" Value="#3E3E42" />
-        <Setter Property="ProgressFill" Value="#0078D4" />
-        <Setter Property="ThumbBackground" Value="#FFFFFF" />
-        <Setter Property="ThumbBorderBrush" Value="#0078D4" />
+        <Setter Property="TrackBackground" Value="{DynamicResource ControlStrongFillColorDefaultBrush}" />
+        <Setter Property="ProgressFill" Value="{DynamicResource AccentFillColorDefaultBrush}" />
+        <Setter Property="ThumbBackground" Value="{DynamicResource ControlSolidFillColorDefaultBrush}" />
+        <Setter Property="ThumbBorderBrush" Value="{DynamicResource AccentFillColorDefaultBrush}" />
         <Setter Property="ThumbSize" Value="16" />
         <Setter Property="TrackHeight" Value="4" />
         <Setter Property="MinHeight" Value="20" />

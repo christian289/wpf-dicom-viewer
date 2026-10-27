@@ -9,7 +9,7 @@ using System.Text.RegularExpressions;
 using FellowOakDicom;
 using FellowOakDicom.IO.Buffer;
 
-namespace DicomViewer.DatasetTool;
+namespace DicomViewer.Infrastructure.Datasets;
 
 /// <summary>
 /// Rebuilds a supported public CT slice as a new DICOM dataset from an allowlist of image attributes.

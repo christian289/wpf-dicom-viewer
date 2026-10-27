@@ -11,6 +11,5 @@ public sealed class DicomInstance
     public required string FilePath { get; init; }
     public int Rows { get; init; }
     public int Columns { get; init; }
-    public double? SliceLocation { get; init; }
     public double? SliceThickness { get; init; }
 }

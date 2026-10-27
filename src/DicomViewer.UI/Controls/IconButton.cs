@@ -6,23 +6,16 @@ namespace DicomViewer.UI.Controls;
 /// </summary>
 public sealed class IconButton : Button
 {
-    // Freeze된 기본 브러시 (성능 최적화)
-    // Frozen default brushes (performance optimization)
-    private static readonly Brush DefaultHoverBackground;
-    private static readonly Brush DefaultPressedBackground;
+    // Freeze된 기본(폴백) 브러시: 호스트가 테마를 제공하지 않을 때 사용. 정적 필드 초기화로 DP 기본값에 안전하게 사용된다
+    // Frozen default (fallback) brushes used when the host provides no theme; static field initializers make them safe as DP defaults
+    private static readonly Brush DefaultHoverBackground = BrushFactory.Frozen(62, 62, 66);
+    private static readonly Brush DefaultPressedBackground = BrushFactory.Frozen(0, 120, 212);
 
     static IconButton()
     {
         DefaultStyleKeyProperty.OverrideMetadata(
             typeof(IconButton),
             new FrameworkPropertyMetadata(typeof(IconButton)));
-
-        // Frozen 브러시 생성
-        // Create frozen brushes
-        DefaultHoverBackground = new SolidColorBrush(Color.FromRgb(62, 62, 66));
-        DefaultHoverBackground.Freeze();
-        DefaultPressedBackground = new SolidColorBrush(Color.FromRgb(0, 120, 212));
-        DefaultPressedBackground.Freeze();
     }
 
     #region Dependency Properties

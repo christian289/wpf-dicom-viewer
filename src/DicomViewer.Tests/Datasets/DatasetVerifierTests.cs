@@ -3,7 +3,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
-using DicomViewer.DatasetTool;
+using DicomViewer.Infrastructure.Datasets;
 
 using FellowOakDicom;
 using FellowOakDicom.IO.Buffer;

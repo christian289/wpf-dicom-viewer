@@ -1,77 +1,37 @@
-using DicomViewer.ViewModels.Messages;
-
 namespace DicomViewer.ViewModels;
 
 /// <summary>
-/// 메인 윈도우 ViewModel
-/// Main window ViewModel
+/// 메인 윈도우 ViewModel. 뷰어 단일 화면을 ViewModel-first(Mappings.xaml의 암시적 DataTemplate)로 호스팅하고 시작·종료 수명을 뷰어에 위임한다.
+/// Main window ViewModel. Hosts the single viewer screen ViewModel-first (implicit DataTemplate in Mappings.xaml) and delegates the
+/// start and close lifecycle to the viewer.
 /// </summary>
-public sealed partial class MainWindowViewModel : ObservableRecipient
+public sealed class MainWindowViewModel : ObservableObject
 {
-    private readonly ViewerViewModel _viewerViewModel;
-    private readonly TciaExplorerViewModel _tciaExplorerViewModel;
+    private readonly ViewerViewModel _viewer;
 
-    [ObservableProperty]
-    private ObservableObject? _currentViewModel;
-
-    [ObservableProperty]
-    private string _statusMessage = "준비됨 / Ready";
-
-    [ObservableProperty]
-    private bool _isStatusError;
-
-    public MainWindowViewModel(
-        ViewerViewModel viewerViewModel,
-        TciaExplorerViewModel tciaExplorerViewModel)
+    public MainWindowViewModel(ViewerViewModel viewer)
     {
-        _viewerViewModel = viewerViewModel;
-        _tciaExplorerViewModel = tciaExplorerViewModel;
-
-        CurrentViewModel = _tciaExplorerViewModel;
-
-        IsActive = true;
+        ArgumentNullException.ThrowIfNull(viewer);
+        _viewer = viewer;
     }
 
-    protected override void OnActivated()
-    {
-        Messenger.Register<MainWindowViewModel, NavigationMessage>(this, (r, m) =>
-        {
-            r.HandleNavigation(m);
-        });
+    public string Title => "DICOM Viewer";
 
-        Messenger.Register<MainWindowViewModel, StatusMessage>(this, (r, m) =>
-        {
-            r.StatusMessage = m.Message;
-            r.IsStatusError = m.IsError;
-        });
+    /// <summary>
+    /// 창이 호스팅하는 화면의 ViewModel
+    /// ViewModel of the screen hosted by the window
+    /// </summary>
+    public ObservableObject CurrentViewModel => _viewer;
 
-        Messenger.Register<MainWindowViewModel, OpenFolderMessage>(this, (r, m) =>
-        {
-            r._viewerViewModel.LoadFromFolder(m.FolderPath);
-            r.CurrentViewModel = r._viewerViewModel;
-            r.StatusMessage = $"폴더 로드 완료: {m.FolderPath} / Folder loaded: {m.FolderPath}";
-        });
-    }
+    /// <summary>
+    /// 앱 시작 시 고정 데이터셋을 연다.
+    /// Opens the fixed dataset at application start.
+    /// </summary>
+    public Task StartAsync() => _viewer.OpenDatasetAsync();
 
-    private void HandleNavigation(NavigationMessage message)
-    {
-        CurrentViewModel = message.ViewName switch
-        {
-            "Viewer" => _viewerViewModel,
-            "TciaExplorer" => _tciaExplorerViewModel,
-            _ => CurrentViewModel
-        };
-    }
-
-    [RelayCommand]
-    private void NavigateToViewer()
-    {
-        CurrentViewModel = _viewerViewModel;
-    }
-
-    [RelayCommand]
-    private void NavigateToTciaExplorer()
-    {
-        CurrentViewModel = _tciaExplorerViewModel;
-    }
+    /// <summary>
+    /// 창을 닫기 전에 진행 중인 모든 작업을 취소하고 멈출 때까지 기다린다.
+    /// Cancels all in-flight work and waits for it to stop before the window closes.
+    /// </summary>
+    public Task CloseAsync() => _viewer.CloseAsync();
 }

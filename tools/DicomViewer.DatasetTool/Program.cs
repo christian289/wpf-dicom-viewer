@@ -1,4 +1,5 @@
 using DicomViewer.DatasetTool;
+using DicomViewer.Infrastructure.Datasets;
 
 using var cancellation = new CancellationTokenSource();
 ConsoleCancelEventHandler cancel = (_, eventArgs) => { eventArgs.Cancel = true; cancellation.Cancel(); };

@@ -1,4 +1,5 @@
 using DicomViewer.Domain.Enums;
+using DicomViewer.Infrastructure.Dicom;
 
 namespace DicomViewer.Infrastructure.Pacs;
 
@@ -153,14 +154,10 @@ public sealed class LocalFolderPacsService(string basePath) : IPacsConnectionSer
             var modalityStr = firstDataset.GetSingleValueOrDefault(DicomTag.Modality, "Unknown");
 
             var instances = group
-                .Select(f => new DicomInstanceDto(
-                    SopInstanceUid: f.Dataset.GetSingleValueOrDefault(DicomTag.SOPInstanceUID, string.Empty),
-                    InstanceNumber: f.Dataset.GetSingleValueOrDefault(DicomTag.InstanceNumber, 0),
-                    FilePath: f.File?.Name ?? string.Empty,
-                    Rows: f.Dataset.GetSingleValueOrDefault(DicomTag.Rows, (ushort)0),
-                    Columns: f.Dataset.GetSingleValueOrDefault(DicomTag.Columns, (ushort)0),
-                    SliceLocation: f.Dataset.GetSingleValueOrDefault<double?>(DicomTag.SliceLocation, null)))
-                .OrderBy(i => i.SliceLocation ?? i.InstanceNumber)
+                .Select(f => DicomInstanceMapper.Map(f.Dataset, f.File?.Name ?? string.Empty))
+                .OrderBy(i => i.InstanceNumber)
+                .ThenBy(i => i.SopInstanceUid, StringComparer.Ordinal)
+                .ThenBy(i => i.FilePath, StringComparer.Ordinal)
                 .ToList();
 
             seriesList.Add(new DicomSeriesDto(

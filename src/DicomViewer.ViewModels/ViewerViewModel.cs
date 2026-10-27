@@ -1,73 +1,135 @@
-using DicomViewer.ViewModels.Messages;
+using DicomViewer.Domain.Enums;
 
 namespace DicomViewer.ViewModels;
 
 /// <summary>
-/// DICOM 뷰어 ViewModel
-/// DICOM viewer ViewModel
+/// DICOM 뷰어 ViewModel. 모든 멤버는 UI 동기화 컨텍스트에서만 호출한다. 비동기 작업의 결과는 await 연속에서(캡처된 UI 컨텍스트) 게시된다.
+/// DICOM viewer ViewModel. Every member must be used from the UI synchronization context; asynchronous results are published from await
+/// continuations on that captured context.
 /// </summary>
-public sealed partial class ViewerViewModel : ObservableRecipient
+public sealed partial class ViewerViewModel : ObservableObject, IAsyncDisposable
 {
+    private const double MinZoom = 0.1;
+    private const double MaxZoom = 10.0;
+    private const double ZoomStep = 1.2;
+
     private readonly IDicomImageService _imageService;
-    private readonly ISeriesNavigationService _navigationService;
+    private readonly ISeriesNavigationService _navigation;
+    private readonly IDicomDatasetSource _datasetSource;
+    private readonly HistogramService _histogramService;
 
-    // 현재 이미지 데이터 (8비트 그레이스케일)
-    // Current image data (8-bit grayscale)
-    [ObservableProperty]
-    private byte[]? _currentImagePixels;
+    // 데이터셋
+    // Dataset
+    [NotifyPropertyChangedFor(nameof(StatusText))]
+    [ObservableProperty] private string _datasetId = string.Empty;
 
-    [ObservableProperty]
-    private int _imageWidth;
+    [ObservableProperty] private string _attribution = string.Empty;
 
-    [ObservableProperty]
-    private int _imageHeight;
+    [ObservableProperty] private string _classification = string.Empty;
+
+    [ObservableProperty] private ObservableCollection<DicomSeriesDto> _seriesList = [];
+
+    [ObservableProperty] private DicomSeriesDto? _selectedSeries;
+
+    // 상태 (게시된 프레임은 단일 속성으로 원자적으로 교체된다)
+    // State (the published frame is replaced atomically through one property)
+    [NotifyPropertyChangedFor(nameof(State))]
+    [NotifyPropertyChangedFor(nameof(StatusText))]
+    [ObservableProperty] private bool _isLoading;
+
+    [NotifyPropertyChangedFor(nameof(State))]
+    [NotifyPropertyChangedFor(nameof(StatusText))]
+    [ObservableProperty] private string? _errorMessage;
+
+    [NotifyCanExecuteChangedFor(nameof(AddMeasurementCommand))]
+    [NotifyPropertyChangedFor(nameof(State))]
+    [NotifyPropertyChangedFor(nameof(StatusText))]
+    [NotifyPropertyChangedFor(nameof(IsMeasurementEnabled))]
+    [NotifyPropertyChangedFor(nameof(SpacingBanner))]
+    [ObservableProperty] private RenderedFrame? _frame;
+
+    // 표시 중인 프레임에 대응하는 픽셀 간격 (프레임 게시와 같은 UI 턴에서 갱신)
+    // Pixel spacing of the displayed frame (updated in the same UI turn as the frame publication)
+    [NotifyPropertyChangedFor(nameof(SpacingBanner))]
+    [NotifyPropertyChangedFor(nameof(MeasurementUnit))]
+    [ObservableProperty] private PixelSpacing _displayedSpacing = PixelSpacing.Unknown;
+
+    [NotifyPropertyChangedFor(nameof(GeometryBanner))]
+    [ObservableProperty] private SeriesGeometryStatus _geometryStatus = SeriesGeometryStatus.Empty;
 
     // Window/Level
-    [ObservableProperty]
-    private double _windowWidth = 400;
+    [ObservableProperty] private double _windowWidth = WindowLevel.Default.WindowWidth;
 
-    [ObservableProperty]
-    private double _windowCenter = 40;
+    [ObservableProperty] private double _windowCenter = WindowLevel.Default.WindowCenter;
 
-    // 변환
-    // Transforms
-    [ObservableProperty]
-    private double _zoomFactor = 1.0;
+    // 변환 (ImageTransform과 같은 의미: 맞춤 배율 기준 확대, 시계 방향 회전 도, DIP 이동)
+    // Transform (same meaning as ImageTransform: zoom over fit scale, clockwise rotation in degrees, DIP pan)
+    [ObservableProperty] private double _zoomFactor = 1.0;
 
-    [ObservableProperty]
-    private double _panX;
+    [ObservableProperty] private double _panX;
 
-    [ObservableProperty]
-    private double _panY;
+    [ObservableProperty] private double _panY;
 
-    // 회전 각도 (도)
-    // Rotation angle (degrees)
-    [ObservableProperty]
-    private double _rotationAngle;
+    [ObservableProperty] private double _rotationAngle;
 
-    // 수평 반전
-    // Horizontal flip
-    [ObservableProperty]
-    private bool _flipHorizontal;
+    [ObservableProperty] private bool _flipHorizontal;
 
-    // 수직 반전
-    // Vertical flip
-    [ObservableProperty]
-    private bool _flipVertical;
+    [ObservableProperty] private bool _flipVertical;
 
-    // 네비게이션
-    // Navigation
-    [ObservableProperty]
+    // 네비게이션 (0-based 인덱스)
+    // Navigation (0-based index)
     [NotifyPropertyChangedFor(nameof(SliceDisplayNumber))]
-    private int _currentSliceIndex;
+    [NotifyPropertyChangedFor(nameof(StatusText))]
+    [ObservableProperty] private int _currentSliceIndex;
 
-    [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(MaxSliceIndex))]
-    private int _totalSliceCount;
+    [NotifyPropertyChangedFor(nameof(StatusText))]
+    [ObservableProperty] private int _totalSliceCount;
+
+    // 도구
+    // Tools
+    [ObservableProperty] private ViewerTool _currentTool = ViewerTool.WindowLevel;
+
+    [ObservableProperty] private bool _showHistogram = true;
+
+    public ViewerViewModel(
+        IDicomImageService imageService,
+        ISeriesNavigationService navigation,
+        IDicomDatasetSource datasetSource,
+        HistogramService histogramService)
+    {
+        ArgumentNullException.ThrowIfNull(imageService);
+        ArgumentNullException.ThrowIfNull(navigation);
+        ArgumentNullException.ThrowIfNull(datasetSource);
+        ArgumentNullException.ThrowIfNull(histogramService);
+
+        _imageService = imageService;
+        _navigation = navigation;
+        _datasetSource = datasetSource;
+        _histogramService = histogramService;
+    }
 
     /// <summary>
-    /// 슬라이더 Maximum 값 (0-based 인덱스 최대값)
-    /// Slider maximum value (0-based index maximum)
+    /// 현재 표시 상태. 로드 중이면 이전 프레임이 남아 있어도 Loading이다.
+    /// Current display state. Loading wins even while the previous frame is still shown.
+    /// </summary>
+    public ViewerState State =>
+        IsLoading ? ViewerState.Loading
+        : ErrorMessage is not null ? ViewerState.Error
+        : Frame is null ? ViewerState.Empty
+        : ViewerState.Ready;
+
+    public string StatusText => State switch
+    {
+        ViewerState.Loading => ViewerText.Loading,
+        ViewerState.Error => ErrorMessage!,
+        ViewerState.Ready => ViewerText.Ready(DatasetId, SliceDisplayNumber, TotalSliceCount),
+        _ => ViewerText.Empty
+    };
+
+    /// <summary>
+    /// 슬라이더 Maximum (0-based 인덱스 최대값)
+    /// Slider maximum (0-based index maximum)
     /// </summary>
     public int MaxSliceIndex => Math.Max(0, TotalSliceCount - 1);
 
@@ -77,316 +139,119 @@ public sealed partial class ViewerViewModel : ObservableRecipient
     /// </summary>
     public int SliceDisplayNumber => CurrentSliceIndex + 1;
 
-    // 시리즈 목록
-    // Series list
-    [ObservableProperty]
-    private ObservableCollection<DicomSeriesDto> _seriesList = [];
-
-    [ObservableProperty]
-    private DicomSeriesDto? _selectedSeries;
-
-    // 현재 도구
-    // Current tool
-    [ObservableProperty]
-    private ViewerTool _currentTool = ViewerTool.WindowLevel;
-
-    // 로딩 상태
-    // Loading state
-    [ObservableProperty]
-    private bool _isLoading;
-
-    // 환자/Study 정보
-    // Patient/Study information
-    [ObservableProperty]
-    private string _patientName = string.Empty;
-
-    [ObservableProperty]
-    private string _patientId = string.Empty;
-
-    [ObservableProperty]
-    private string _studyDescription = string.Empty;
-
-    [ObservableProperty]
-    private string _seriesDescription = string.Empty;
-
-    // PixelSpacing (측정용)
-    // PixelSpacing (for measurements)
-    [ObservableProperty]
-    private double _pixelSpacingX = 1.0;
-
-    [ObservableProperty]
-    private double _pixelSpacingY = 1.0;
-
-    // 히스토그램 데이터
-    // Histogram data
-    [ObservableProperty]
-    private int[]? _histogramData;
-
-    // 히스토그램 표시 여부
-    // Show histogram
-    [ObservableProperty]
-    private bool _showHistogram = true;
-
-    // 측정 모드 여부
-    // Measuring mode
-    [ObservableProperty]
-    private bool _isMeasuring;
-
-    // 측정 시작점
-    // Measurement start point
-    [ObservableProperty]
-    private double _measureStartX;
-
-    [ObservableProperty]
-    private double _measureStartY;
-
-    // 측정 끝점
-    // Measurement end point
-    [ObservableProperty]
-    private double _measureEndX;
-
-    [ObservableProperty]
-    private double _measureEndY;
-
-    private PixelData? _currentPixelData;
-
-    public ViewerViewModel(
-        IDicomImageService imageService,
-        ISeriesNavigationService navigationService)
+    /// <summary>
+    /// Spatial이 아니면 슬라이스 순서가 물리 순서가 아니라는 배너 문구, 아니면 null
+    /// Banner text saying the slice order is not physical unless Spatial; otherwise null
+    /// </summary>
+    public string? GeometryBanner => GeometryStatus switch
     {
-        _imageService = imageService;
-        _navigationService = navigationService;
-
-        // Messenger 활성화
-        // Enable Messenger
-        IsActive = true;
-    }
+        SeriesGeometryStatus.MissingGeometry => ViewerText.GeometryMissing,
+        SeriesGeometryStatus.AmbiguousGeometry => ViewerText.GeometryAmbiguous,
+        _ => null
+    };
 
     /// <summary>
-    /// 폴더에서 DICOM 파일 로드
-    /// Load DICOM files from folder
+    /// 표시 중인 영상의 간격이 미확인이면 px 단위 안내, 아니면 null
+    /// px-unit notice when the displayed image has no known spacing; otherwise null
     /// </summary>
-    public void LoadFromFolder(string folderPath)
-    {
-        if (!Directory.Exists(folderPath)) return;
+    public string? SpacingBanner => Frame is not null && !DisplayedSpacing.IsValid ? ViewerText.SpacingUnknown : null;
 
-        // DICOM 파일 검색 - 모든 파일 검색 후 디렉토리 제외
-        // Search for DICOM files - get all files excluding directories
-        var allFiles = Directory.GetFiles(folderPath, "*", SearchOption.AllDirectories)
-            .Where(f => !f.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
-            .Where(f => !f.EndsWith(".txt", StringComparison.OrdinalIgnoreCase))
-            .Where(f => !f.EndsWith(".xml", StringComparison.OrdinalIgnoreCase))
-            .Where(f => !f.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
-            .ToArray();
+    public string MeasurementUnit => DisplayedSpacing.Unit == PixelSpacingUnit.Millimeter ? "mm" : "px";
 
-        // .dcm 파일 우선, 없으면 모든 파일 사용
-        // Prefer .dcm files, otherwise use all files
-        var dcmFiles = allFiles.Where(f => f.EndsWith(".dcm", StringComparison.OrdinalIgnoreCase)).ToArray();
-        if (dcmFiles.Length == 0)
-        {
-            dcmFiles = allFiles;
-        }
+    /// <summary>
+    /// 표시 중인 프레임이 있을 때만 측정할 수 있다.
+    /// Measurements are possible only while a frame is displayed.
+    /// </summary>
+    public bool IsMeasurementEnabled => Frame is not null;
 
-        if (dcmFiles.Length == 0) return;
-
-        // 유효한 DICOM 이미지 파일만 필터링 (픽셀 데이터가 있는 파일)
-        // Filter only valid DICOM image files (files with pixel data)
-        var validDicomFiles = dcmFiles.Where(f => _imageService.IsValidDicomImage(f)).ToArray();
-
-        if (validDicomFiles.Length == 0)
-        {
-            Messenger.Send(new StatusMessage("유효한 DICOM 이미지 파일을 찾을 수 없습니다. / No valid DICOM image files found.", true));
-            return;
-        }
-
-        // 인스턴스 생성
-        // Create instances
-        var instances = validDicomFiles.Select((f, i) => new DicomInstanceDto(
-            SopInstanceUid: Path.GetFileNameWithoutExtension(f),
-            InstanceNumber: i + 1,
-            FilePath: f,
-            Rows: 512,
-            Columns: 512,
-            SliceLocation: null)).ToList();
-
-        // 시리즈 생성
-        // Create series
-        var series = new DicomSeriesDto(
-            SeriesInstanceUid: Path.GetFileName(folderPath),
-            SeriesNumber: 1,
-            Modality: "TCIA",
-            SeriesDescription: "TCIA Downloaded Series",
-            NumberOfInstances: instances.Count,
-            Instances: instances);
-
-        PatientName = "TCIA Patient";
-        PatientId = "TCIA";
-        StudyDescription = $"TCIA Downloaded Study ({instances.Count} images)";
-
-        SeriesList = [series];
-        SelectedSeries = series;
-
-        // 상태 메시지 전송 (스킵된 파일 수 포함)
-        // Send status message (including skipped file count)
-        var skippedCount = dcmFiles.Length - validDicomFiles.Length;
-        var message = skippedCount > 0
-            ? $"{instances.Count}개 이미지 로드됨 ({skippedCount}개 파일 스킵) / {instances.Count} images loaded ({skippedCount} files skipped)"
-            : $"{instances.Count}개 이미지 로드됨 / {instances.Count} images loaded";
-        Messenger.Send(new StatusMessage(message, false));
-    }
+    /// <summary>
+    /// 표시 중인 영상의 측정선. 영상 픽셀 좌표이며 영상이 바뀌면 비워진다.
+    /// Measurement lines of the displayed image, in image pixels; cleared when the image changes.
+    /// </summary>
+    public ObservableCollection<MeasurementLine> Measurements { get; } = [];
 
     partial void OnSelectedSeriesChanged(DicomSeriesDto? value)
     {
-        if (value is null) return;
+        if (_closed)
+        {
+            return;
+        }
 
-        SeriesDescription = value.SeriesDescription ?? string.Empty;
-        _navigationService.SetSeries(value.Instances);
-        TotalSliceCount = _navigationService.TotalCount;
-        CurrentSliceIndex = 0;
+        if (value is null)
+        {
+            ClearSeries();
+            return;
+        }
 
-        // 첫 번째 이미지 로드
-        // Load first image
-        _ = LoadCurrentImageAsync();
+        BeginSeries(value);
+    }
+
+    partial void OnCurrentSliceIndexChanged(int value)
+    {
+        if (_syncingSliceIndex || _closed || TotalSliceCount == 0)
+        {
+            return;
+        }
+
+        var clamped = Math.Clamp(value, 0, MaxSliceIndex);
+        if (clamped != value)
+        {
+            SetSliceIndexSilently(clamped);
+        }
+
+        if (clamped == _navigation.CurrentIndex)
+        {
+            return;
+        }
+
+        _navigation.NavigateToIndex(clamped);
+        StartSliceLoad();
     }
 
     partial void OnWindowWidthChanged(double value)
     {
-        _ = RefreshImageAsync();
-    }
-
-    partial void OnWindowCenterChanged(double value)
-    {
-        _ = RefreshImageAsync();
-    }
-
-    partial void OnCurrentSliceIndexChanged(int oldValue, int newValue)
-    {
-        // 네비게이션 서비스의 인덱스와 다른 경우에만 이미지 로드 (슬라이더 직접 조작 시)
-        // Only load image when different from navigation service index (slider direct manipulation)
-        if (_navigationService.CurrentIndex != newValue)
+        if (!double.IsFinite(value) || value < 1)
         {
-            _navigationService.NavigateToIndex(newValue);
-            _ = LoadCurrentImageAsync();
+            WindowWidth = 1;
+            return;
         }
+
+        if (!_suppressRender)
+        {
+            _ = RequestRender();
+        }
+    }
+
+    partial void OnWindowCenterChanged(double oldValue, double newValue)
+    {
+        if (!double.IsFinite(newValue))
+        {
+            WindowCenter = double.IsFinite(oldValue) ? oldValue : 0;
+            return;
+        }
+
+        if (!_suppressRender)
+        {
+            _ = RequestRender();
+        }
+    }
+
+    partial void OnShowHistogramChanged(bool value)
+    {
+        _ = RequestRender();
     }
 
     [RelayCommand]
-    private async Task LoadCurrentImageAsync()
-    {
-        var instance = _navigationService.GetCurrentInstance();
-        if (instance is null) return;
-
-        IsLoading = true;
-
-        try
-        {
-            _currentPixelData = await _imageService.LoadPixelDataAsync(instance.FilePath);
-
-            ImageWidth = _currentPixelData.Width;
-            ImageHeight = _currentPixelData.Height;
-
-            // Window/Level 기본값 설정 (첫 로드 시)
-            // Set default Window/Level (on first load)
-            if (CurrentSliceIndex == 0)
-            {
-                var defaultWL = _imageService.GetDefaultWindowLevel(instance.FilePath);
-                WindowWidth = defaultWL.WindowWidth;
-                WindowCenter = defaultWL.WindowCenter;
-            }
-
-            // PixelSpacing 로드
-            // Load PixelSpacing
-            var pixelSpacing = _imageService.GetPixelSpacing(instance.FilePath);
-            PixelSpacingX = pixelSpacing.X;
-            PixelSpacingY = pixelSpacing.Y;
-
-            await RefreshImageAsync();
-        }
-        catch (Exception ex)
-        {
-            Messenger.Send(new StatusMessage($"이미지 로드 실패: {ex.Message} / Failed to load image: {ex.Message}", true));
-        }
-        finally
-        {
-            IsLoading = false;
-        }
-    }
-
-    private async Task RefreshImageAsync()
-    {
-        if (_currentPixelData is null) return;
-
-        await Task.Run(() =>
-        {
-            var windowLevel = new WindowLevel(WindowWidth, WindowCenter);
-            var pixels = _imageService.ApplyWindowLevel(_currentPixelData, windowLevel);
-            CurrentImagePixels = pixels;
-
-            // 히스토그램 계산
-            // Calculate histogram
-            if (ShowHistogram && pixels is not null)
-            {
-                var bins = new int[256];
-                foreach (var pixel in pixels)
-                {
-                    bins[pixel]++;
-                }
-                HistogramData = bins;
-            }
-        });
-    }
+    private void NextSlice() => CurrentSliceIndex = Math.Min(CurrentSliceIndex + 1, MaxSliceIndex);
 
     [RelayCommand]
-    private async Task NavigateToSliceAsync(int index)
-    {
-        _navigationService.NavigateToIndex(index);
-        CurrentSliceIndex = _navigationService.CurrentIndex;
-        await LoadCurrentImageAsync();
-    }
+    private void PreviousSlice() => CurrentSliceIndex = Math.Max(CurrentSliceIndex - 1, 0);
 
     [RelayCommand]
-    private async Task NextSliceAsync()
-    {
-        var instance = _navigationService.NavigateNext();
-        if (instance is not null)
-        {
-            CurrentSliceIndex = _navigationService.CurrentIndex;
-            await LoadCurrentImageAsync();
-        }
-    }
+    private void FirstSlice() => CurrentSliceIndex = 0;
 
     [RelayCommand]
-    private async Task PreviousSliceAsync()
-    {
-        var instance = _navigationService.NavigatePrevious();
-        if (instance is not null)
-        {
-            CurrentSliceIndex = _navigationService.CurrentIndex;
-            await LoadCurrentImageAsync();
-        }
-    }
-
-    [RelayCommand]
-    private async Task FirstSliceAsync()
-    {
-        var instance = _navigationService.NavigateFirst();
-        if (instance is not null)
-        {
-            CurrentSliceIndex = _navigationService.CurrentIndex;
-            await LoadCurrentImageAsync();
-        }
-    }
-
-    [RelayCommand]
-    private async Task LastSliceAsync()
-    {
-        var instance = _navigationService.NavigateLast();
-        if (instance is not null)
-        {
-            CurrentSliceIndex = _navigationService.CurrentIndex;
-            await LoadCurrentImageAsync();
-        }
-    }
+    private void LastSlice() => CurrentSliceIndex = MaxSliceIndex;
 
     [RelayCommand]
     private void ApplyWindowLevelPreset(string presetName)
@@ -400,15 +265,138 @@ public sealed partial class ViewerViewModel : ObservableRecipient
             "Liver" => WindowLevel.CtLiver,
             "Mediastinum" => WindowLevel.CtMediastinum,
             "MR" => WindowLevel.MrDefault,
-            _ => WindowLevel.Default
+            _ => null
         };
 
-        WindowWidth = preset.WindowWidth;
-        WindowCenter = preset.WindowCenter;
+        if (preset is not null)
+        {
+            SetWindowLevel(preset);
+        }
+    }
+
+    /// <summary>
+    /// 도구는 라디오 방식이다: 이미 선택된 도구를 다시 눌러도 토글 버튼이 해제된 채 남지 않도록 같은 값이면 바인딩을 다시 알린다.
+    /// Tools are radio-style: re-selecting the current tool re-raises the binding so the toggle button never stays unchecked.
+    /// </summary>
+    [RelayCommand]
+    private void SelectTool(ViewerTool tool)
+    {
+        if (CurrentTool == tool)
+        {
+            OnPropertyChanged(nameof(CurrentTool));
+            return;
+        }
+
+        CurrentTool = tool;
+    }
+
+    /// <summary>
+    /// 시리즈 첫 영상의 DICOM 기본 Window/Level로 되돌린다.
+    /// Restores the DICOM default Window/Level of the series' first image.
+    /// </summary>
+    [RelayCommand]
+    private void ResetWindowLevel()
+    {
+        if (_seriesDefaultWindowLevel is { } defaultWindowLevel)
+        {
+            SetWindowLevel(defaultWindowLevel);
+        }
     }
 
     [RelayCommand]
-    private void ResetView()
+    private void ResetView() => ResetViewTransform();
+
+    [RelayCommand]
+    private void ZoomIn() => ZoomFactor = Math.Min(ZoomFactor * ZoomStep, MaxZoom);
+
+    [RelayCommand]
+    private void ZoomOut() => ZoomFactor = Math.Max(ZoomFactor / ZoomStep, MinZoom);
+
+    /// <summary>
+    /// 맞춤 배율이 확대율 1.0이므로 확대율과 이동만 초기화한다.
+    /// Fit scale is zoom 1.0, so only zoom and pan are reset.
+    /// </summary>
+    [RelayCommand]
+    private void FitToWindow()
+    {
+        ZoomFactor = 1.0;
+        PanX = 0;
+        PanY = 0;
+    }
+
+    [RelayCommand]
+    private void RotateLeft() => RotationAngle = (RotationAngle - 90 + 360) % 360;
+
+    [RelayCommand]
+    private void RotateRight() => RotationAngle = (RotationAngle + 90) % 360;
+
+    [RelayCommand]
+    private void ToggleFlipHorizontal() => FlipHorizontal = !FlipHorizontal;
+
+    [RelayCommand]
+    private void ToggleFlipVertical() => FlipVertical = !FlipVertical;
+
+    /// <summary>
+    /// 표시 중인 바로 그 영상 위에서 그린 측정선만 추가한다. 간격이 미확인이면 px 단위, mm 값은 null이다.
+    /// Adds only a line drawn on the image that is displayed right now. Unknown spacing yields px units and a null mm value.
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanAddMeasurement))]
+    private void AddMeasurement(MeasurementRequest request)
+    {
+        if (!CanAddMeasurement(request))
+        {
+            return;
+        }
+
+        var spacing = DisplayedSpacing;
+        var length = spacing.CalculateDistance(request.End.X - request.Start.X, request.End.Y - request.Start.Y);
+        double? lengthMm = spacing.IsValid ? length : null;
+
+        Measurements.Add(new MeasurementLine(
+            request.Start,
+            request.End,
+            lengthMm,
+            ViewerText.Distance(length, spacing.Unit)));
+    }
+
+    private bool CanAddMeasurement(MeasurementRequest request) =>
+        Frame is { } frame && string.Equals(frame.SourceId, request.SourceId, StringComparison.Ordinal);
+
+    [RelayCommand]
+    private void ClearMeasurements() => Measurements.Clear();
+
+    private void SetWindowLevel(WindowLevel windowLevel)
+    {
+        // 한 번의 렌더만 요청한다 (너비·중심을 따로 바꾸면 렌더가 두 번 요청된다).
+        // Request a single render (changing width and center separately would request two).
+        _suppressRender = true;
+        try
+        {
+            WindowWidth = windowLevel.WindowWidth;
+            WindowCenter = windowLevel.WindowCenter;
+        }
+        finally
+        {
+            _suppressRender = false;
+        }
+
+        _ = RequestRender();
+    }
+
+    private void SetSliceIndexSilently(int index)
+    {
+        _syncingSliceIndex = true;
+        try
+        {
+            CurrentSliceIndex = index;
+        }
+        finally
+        {
+            _syncingSliceIndex = false;
+        }
+    }
+
+    private void ResetViewTransform()
     {
         ZoomFactor = 1.0;
         PanX = 0;
@@ -417,127 +405,4 @@ public sealed partial class ViewerViewModel : ObservableRecipient
         FlipHorizontal = false;
         FlipVertical = false;
     }
-
-    [RelayCommand]
-    private void ZoomIn()
-    {
-        ZoomFactor = Math.Min(ZoomFactor * 1.2, 10.0);
-    }
-
-    [RelayCommand]
-    private void ZoomOut()
-    {
-        ZoomFactor = Math.Max(ZoomFactor / 1.2, 0.1);
-    }
-
-    [RelayCommand]
-    private void FitToWindow()
-    {
-        // 화면에 맞게 줌 조정 (View에서 계산 필요)
-        // Adjust zoom to fit window (calculation needed in View)
-        ZoomFactor = 1.0;
-        PanX = 0;
-        PanY = 0;
-    }
-
-    [RelayCommand]
-    private void SelectTool(ViewerTool tool)
-    {
-        CurrentTool = tool;
-    }
-
-    /// <summary>
-    /// 왼쪽으로 90도 회전
-    /// Rotate 90 degrees left
-    /// </summary>
-    [RelayCommand]
-    private void RotateLeft()
-    {
-        RotationAngle = (RotationAngle - 90 + 360) % 360;
-    }
-
-    /// <summary>
-    /// 오른쪽으로 90도 회전
-    /// Rotate 90 degrees right
-    /// </summary>
-    [RelayCommand]
-    private void RotateRight()
-    {
-        RotationAngle = (RotationAngle + 90) % 360;
-    }
-
-    /// <summary>
-    /// 수평 반전 토글
-    /// Toggle horizontal flip
-    /// </summary>
-    [RelayCommand]
-    private void ToggleFlipHorizontal()
-    {
-        FlipHorizontal = !FlipHorizontal;
-    }
-
-    /// <summary>
-    /// 수직 반전 토글
-    /// Toggle vertical flip
-    /// </summary>
-    [RelayCommand]
-    private void ToggleFlipVertical()
-    {
-        FlipVertical = !FlipVertical;
-    }
-
-    /// <summary>
-    /// 히스토그램 표시 토글
-    /// Toggle histogram visibility
-    /// </summary>
-    [RelayCommand]
-    private void ToggleHistogram()
-    {
-        ShowHistogram = !ShowHistogram;
-    }
-
-    /// <summary>
-    /// 현재 측정 거리 계산 (mm)
-    /// Calculate current measurement distance (mm)
-    /// </summary>
-    public double CurrentMeasurementDistanceMm
-    {
-        get
-        {
-            var dx = (MeasureEndX - MeasureStartX) * PixelSpacingX;
-            var dy = (MeasureEndY - MeasureStartY) * PixelSpacingY;
-            return Math.Sqrt(dx * dx + dy * dy);
-        }
-    }
-
-    public void UpdateWindowLevel(double deltaWidth, double deltaCenter)
-    {
-        WindowWidth = Math.Max(1, WindowWidth + deltaWidth);
-        WindowCenter = WindowCenter + deltaCenter;
-    }
-
-    public void UpdatePan(double deltaX, double deltaY)
-    {
-        PanX += deltaX;
-        PanY += deltaY;
-    }
-
-    public void UpdateZoom(double factor)
-    {
-        ZoomFactor = Math.Clamp(ZoomFactor * factor, 0.1, 10.0);
-    }
-}
-
-/// <summary>
-/// 뷰어 도구 열거형
-/// Viewer tool enumeration
-/// </summary>
-public enum ViewerTool
-{
-    None,
-    Pan,
-    Zoom,
-    WindowLevel,
-    Rotate,
-    Measure
 }

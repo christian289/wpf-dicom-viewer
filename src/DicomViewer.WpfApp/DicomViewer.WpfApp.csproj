@@ -7,12 +7,12 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" />
     <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <PackageReference Include="WPF-UI" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\DicomViewer.Infrastructure\DicomViewer.Infrastructure.csproj" />
     <ProjectReference Include="..\DicomViewer.ViewModels\DicomViewer.ViewModels.csproj" />
-    <ProjectReference Include="..\DicomViewer.WpfServices\DicomViewer.WpfServices.csproj" />
     <ProjectReference Include="..\DicomViewer.UI\DicomViewer.UI.csproj" />
   </ItemGroup>
 
@@ -20,6 +20,21 @@
     <None Update="appsettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+
+  <!--
+    고정 공개 DICOM 기준 자료(Git LFS)를 빌드·게시 출력의 data\dicom\vhp-female-ankle-v1 아래로 복사한다.
+    앱은 AppContext.BaseDirectory 기준 상대 경로로 열기 때문에 작업 디렉터리와 무관하게 실행된다.
+    Git LFS 포인터가 복원되지 않았다면 포인터 파일이 그대로 복사되고 앱은 명시적 오류를 표시한다.
+    Copies the pinned public DICOM baseline (Git LFS) into data\dicom\vhp-female-ankle-v1 of the build and publish output.
+    The app opens it relative to AppContext.BaseDirectory, so it runs independently of the working directory.
+    If the Git LFS pointers were not restored, the pointer files are copied as-is and the app shows an explicit error.
+  -->
+  <ItemGroup>
+    <Content Include="..\..\data\dicom\vhp-female-ankle-v1\**\*"
+             LinkBase="data\dicom\vhp-female-ankle-v1"
+             CopyToOutputDirectory="PreserveNewest"
+             CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

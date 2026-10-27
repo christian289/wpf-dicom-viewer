@@ -1,414 +1,464 @@
+using DicomViewer.Application.Exceptions;
+
 namespace DicomViewer.Infrastructure.Dicom;
 
 /// <summary>
-/// fo-dicom 기반 DICOM 이미지 서비스 구현 (SIMD/Parallel 최적화)
-/// fo-dicom based DICOM image service implementation (SIMD/Parallel optimized)
+/// fo-dicom 기반 DICOM 이미지 서비스
+/// fo-dicom based DICOM image service
 /// </summary>
+/// <remarks>
+/// 지원 범위: 단일 프레임, 비압축, Little Endian, MONOCHROME2, 1 샘플, 8/16비트 할당,
+/// HighBit = BitsStored - 1, VOI LINEAR(또는 VOILUTFunction 없음).
+/// Supported: single frame, uncompressed, little endian, MONOCHROME2, one sample, 8/16-bit allocated,
+/// HighBit = BitsStored - 1, and VOI LINEAR (or no VOILUTFunction).
+/// </remarks>
 public sealed class FoDicomImageService : IDicomImageService
 {
-    // 512x512 이상의 이미지에서 병렬 처리 사용
-    // Use parallel processing for images 512x512 or larger
-    private const int ParallelThreshold = 262144;
+    /// <summary>
+    /// 취소 확인 간격: 이 픽셀 수마다 한 번 확인한다 (행 단위가 아님)
+    /// Cancellation checkpoint interval: checked once per this many pixels (not per row)
+    /// </summary>
+    private const int CancellationBlockSize = 65536;
 
-    // SIMD 벡터 크기
-    // SIMD vector size
-    private static readonly int VectorSize = Vector<float>.Count;
+    private const string InvalidDicomMessage =
+        "DICOM 파일을 읽을 수 없습니다. / The file is not a readable DICOM file.";
 
-    public async Task<PixelData> LoadPixelDataAsync(
+    /// <summary>
+    /// 헤더를 먼저 읽고 지원 프로필·크기를 검증한 뒤에만 프레임 바이트를 읽는다(ReadLargeOnDemand).
+    /// 파일 스트림은 여기서 소유하며, 지연 바인딩된 픽셀 버퍼는 스트림을 닫기 전에 Extract가 모두 꺼낸다.
+    /// Reads headers first and only extracts the frame bytes after the support profile and size are validated (ReadLargeOnDemand).
+    /// The file stream is owned here; the lazily bound pixel buffer is fully extracted by Extract before the stream is closed.
+    /// </summary>
+    public async Task<LoadedDicomImage> LoadImageAsync(
         string filePath,
         CancellationToken cancellationToken = default)
     {
-        var dicomFile = await DicomFile.OpenAsync(filePath);
-        return ExtractPixelData(dicomFile.Dataset);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        await using var stream = OpenFileStream(filePath);
+        var file = await OpenAsync(() => DicomFile.OpenAsync(stream, FileReadOption.ReadLargeOnDemand, 0)).ConfigureAwait(false);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        return Extract(file, cancellationToken);
     }
 
-    public async Task<PixelData> LoadPixelDataFromStreamAsync(
+    /// <summary>
+    /// 호출자가 스트림 수명을 소유한다. 반환 전에 프레임을 모두 꺼내므로 반환 뒤에는 스트림을 읽지 않는다.
+    /// The caller owns the stream lifetime. The frame is fully extracted before returning, so the stream is not read afterwards.
+    /// </summary>
+    public async Task<LoadedDicomImage> LoadImageFromStreamAsync(
         Stream dicomStream,
         CancellationToken cancellationToken = default)
     {
-        var dicomFile = await DicomFile.OpenAsync(dicomStream);
-        return ExtractPixelData(dicomFile.Dataset);
-    }
+        cancellationToken.ThrowIfCancellationRequested();
+        var file = await OpenAsync(() => DicomFile.OpenAsync(dicomStream, FileReadOption.ReadLargeOnDemand, 0)).ConfigureAwait(false);
+        cancellationToken.ThrowIfCancellationRequested();
 
-    public WindowLevel GetDefaultWindowLevel(string filePath)
-    {
-        var dicomFile = DicomFile.Open(filePath);
-        var dataset = dicomFile.Dataset;
-
-        var windowWidth = dataset.GetSingleValueOrDefault(DicomTag.WindowWidth, 400.0);
-        var windowCenter = dataset.GetSingleValueOrDefault(DicomTag.WindowCenter, 40.0);
-
-        return new WindowLevel(windowWidth, windowCenter);
+        return Extract(file, cancellationToken);
     }
 
     /// <summary>
-    /// DICOM 이미지의 PixelSpacing 값을 반환
-    /// Returns the PixelSpacing values from DICOM image
+    /// 픽셀 값을 읽지 않고(ReadLargeOnDemand) 같은 지원 프로필로 헤더를 검증한 뒤 메타데이터를 반환한다.
+    /// Reads headers lazily (ReadLargeOnDemand), validates them against the same support profile without
+    /// materializing pixels, then returns the metadata. The file stream is owned here and closed on return.
     /// </summary>
-    public PixelSpacing GetPixelSpacing(string filePath)
+    public async Task<DicomInstanceDto> ReadMetadataAsync(
+        string filePath,
+        CancellationToken cancellationToken = default)
     {
-        try
-        {
-            var dicomFile = DicomFile.Open(filePath);
-            var dataset = dicomFile.Dataset;
+        cancellationToken.ThrowIfCancellationRequested();
 
-            // PixelSpacing은 [row spacing, column spacing] 형태
-            // PixelSpacing is in [row spacing, column spacing] format
-            if (dataset.TryGetValues<double>(DicomTag.PixelSpacing, out var spacing) && spacing.Length >= 2)
-            {
-                return new PixelSpacing(spacing[1], spacing[0]); // X = column, Y = row
-            }
-
-            // ImagerPixelSpacing 시도 (DR/CR 이미지용)
-            // Try ImagerPixelSpacing (for DR/CR images)
-            if (dataset.TryGetValues<double>(DicomTag.ImagerPixelSpacing, out var imagerSpacing) && imagerSpacing.Length >= 2)
-            {
-                return new PixelSpacing(imagerSpacing[1], imagerSpacing[0]);
-            }
-
-            return PixelSpacing.Default;
-        }
-        catch
-        {
-            return PixelSpacing.Default;
-        }
-    }
-
-    public bool IsValidDicomImage(string filePath)
-    {
-        try
-        {
-            var dicomFile = DicomFile.Open(filePath);
-            var dataset = dicomFile.Dataset;
-
-            // 픽셀 데이터가 있는지 확인
-            // Check if pixel data exists
-            if (!dataset.Contains(DicomTag.PixelData))
-            {
-                return false;
-            }
-
-            // 이미지 크기가 유효한지 확인
-            // Check if image dimensions are valid
-            var rows = dataset.GetSingleValueOrDefault(DicomTag.Rows, (ushort)0);
-            var columns = dataset.GetSingleValueOrDefault(DicomTag.Columns, (ushort)0);
-
-            return rows > 0 && columns > 0;
-        }
-        catch
-        {
-            // DICOM 파일이 아니거나 손상된 파일
-            // Not a DICOM file or corrupted file
-            return false;
-        }
-    }
-
-    public byte[] ApplyWindowLevel(PixelData pixelData, WindowLevel windowLevel)
-    {
-        var pixelCount = pixelData.PixelCount;
-
-        // ArrayPool을 사용한 메모리 효율화
-        // Memory efficiency using ArrayPool
-        var rentedBuffer = ArrayPool<byte>.Shared.Rent(pixelCount);
+        await using var stream = OpenFileStream(filePath);
+        var file = await OpenAsync(() => DicomFile.OpenAsync(stream, FileReadOption.ReadLargeOnDemand, 0)).ConfigureAwait(false);
+        cancellationToken.ThrowIfCancellationRequested();
 
         try
         {
-            var windowMin = windowLevel.WindowCenter - windowLevel.WindowWidth / 2.0;
-            var windowMax = windowLevel.WindowCenter + windowLevel.WindowWidth / 2.0;
-            var scale = 255.0 / windowLevel.WindowWidth;
-
-            if (pixelData.BitsAllocated == 16)
-            {
-                // 대용량 이미지는 병렬 처리
-                // Use parallel processing for large images
-                if (pixelCount >= ParallelThreshold)
-                {
-                    ProcessPixels16BitParallel(pixelData, rentedBuffer, windowMin, windowMax, scale);
-                }
-                else
-                {
-                    ProcessPixels16BitOptimized(pixelData, rentedBuffer, windowMin, windowMax, scale);
-                }
-            }
-            else
-            {
-                if (pixelCount >= ParallelThreshold)
-                {
-                    ProcessPixels8BitParallel(pixelData, rentedBuffer, windowMin, windowMax, scale);
-                }
-                else
-                {
-                    ProcessPixels8BitOptimized(pixelData, rentedBuffer, windowMin, windowMax, scale);
-                }
-            }
-
-            // 결과를 정확한 크기의 배열로 복사
-            // Copy result to exact-size array
-            var result = new byte[pixelCount];
-            Buffer.BlockCopy(rentedBuffer, 0, result, 0, pixelCount);
-            return result;
+            ReadSupportedHeader(file.Dataset, file.FileMetaInfo.TransferSyntax);
+            return DicomInstanceMapper.Map(file.Dataset, filePath);
         }
-        finally
+        catch (DicomException)
         {
-            ArrayPool<byte>.Shared.Return(rentedBuffer);
+            throw new InvalidDataException(InvalidDicomMessage);
         }
     }
 
-    private static PixelData ExtractPixelData(DicomDataset dataset)
+    public void ApplyWindowLevel(
+        PixelData pixelData,
+        WindowLevel windowLevel,
+        Span<byte> destination,
+        CancellationToken cancellationToken = default)
     {
+        var pixelCount = ValidatePixelData(pixelData);
+        ValidateWindowLevel(windowLevel);
+
+        if (destination.Length < pixelCount)
+        {
+            throw new ArgumentException(
+                $"Destination must hold at least {pixelCount} bytes.",
+                nameof(destination));
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        // 루프 밖에서 한 번만 계산하는 불변값 / Invariants computed once outside the loop
+        var raw = pixelData.RawPixels;
+        var sampleSize = pixelData.BitsAllocated / 8;
+        var mask = (1 << pixelData.BitsStored) - 1;
+        var signBit = 1 << (pixelData.BitsStored - 1);
+        var isSigned = pixelData.IsSigned;
+        var slope = pixelData.RescaleSlope;
+        var intercept = pixelData.RescaleIntercept;
+        var voi = VoiLinear.From(windowLevel);
+
+        for (var blockStart = 0; blockStart < pixelCount;)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            // pixelCount - blockStart는 항상 양수이므로 blockStart + 블록 크기가 int를 넘지 않는다
+            // pixelCount - blockStart is always positive, so blockStart + block size cannot overflow int
+            var blockEnd = blockStart + Math.Min(CancellationBlockSize, pixelCount - blockStart);
+            for (var i = blockStart; i < blockEnd; i++)
+            {
+                var stored = ReadStoredValue(raw, i, sampleSize, mask, signBit, isSigned);
+                destination[i] = voi.Apply(stored * slope + intercept);
+            }
+
+            blockStart = blockEnd;
+        }
+    }
+
+    private static FileStream OpenFileStream(string filePath) =>
+        new(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, FileOptions.Asynchronous);
+
+    private static async Task<DicomFile> OpenAsync(Func<Task<DicomFile>> open)
+    {
+        try
+        {
+            return await open().ConfigureAwait(false);
+        }
+        catch (DicomException)
+        {
+            throw new InvalidDataException(InvalidDicomMessage);
+        }
+    }
+
+    private static LoadedDicomImage Extract(DicomFile file, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var dataset = file.Dataset;
+            var header = ReadSupportedHeader(dataset, file.FileMetaInfo.TransferSyntax);
+
+            // 크기를 검증한 뒤에만 프레임을 읽는다. .Data가 지연 버퍼를 스트림에서 소유 배열로 복사하므로 호출자가 스트림을 닫아도 안전하다.
+            // The frame is read only after the size was validated. .Data copies the lazy buffer from the stream into an owned array,
+            // so the stream may be closed afterwards.
+            var frame = DicomPixelData.Create(dataset).GetFrame(0).Data;
+            if (frame.Length < header.ByteCount)
+            {
+                throw new InvalidDataException("Pixel data is shorter than the declared frame size.");
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var pixels = new PixelData(
+                Width: header.Columns,
+                Height: header.Rows,
+                BitsAllocated: header.BitsAllocated,
+                BitsStored: header.BitsStored,
+                IsSigned: header.IsSigned,
+                RescaleSlope: header.RescaleSlope,
+                RescaleIntercept: header.RescaleIntercept,
+                RawPixels: frame);
+
+            return new LoadedDicomImage(pixels, ReadPixelSpacing(dataset), ReadDefaultWindowLevel(dataset));
+        }
+        catch (DicomException)
+        {
+            throw new InvalidDataException(InvalidDicomMessage);
+        }
+    }
+
+    /// <summary>
+    /// 지원 프로필 검증. 실패는 명시적 미지원(UnsupportedDicomImageException) 또는 손상(InvalidDataException)이다.
+    /// Support-profile validation. Failures are explicit unsupported (UnsupportedDicomImageException) or malformed (InvalidDataException).
+    /// </summary>
+    private static ImageHeader ReadSupportedHeader(DicomDataset dataset, DicomTransferSyntax transferSyntax)
+    {
+        if (transferSyntax.Equals(DicomTransferSyntax.ExplicitVRBigEndian))
+        {
+            throw new UnsupportedDicomImageException("Big endian transfer syntax is not supported.");
+        }
+
+        if (transferSyntax.IsEncapsulated)
+        {
+            throw new UnsupportedDicomImageException("Compressed transfer syntaxes are not supported.");
+        }
+
+        if (dataset.GetSingleValueOrDefault(DicomTag.NumberOfFrames, 1) != 1)
+        {
+            throw new UnsupportedDicomImageException("Multi-frame images are not supported.");
+        }
+
+        if (dataset.GetSingleValueOrDefault(DicomTag.SamplesPerPixel, (ushort)1) != 1)
+        {
+            throw new UnsupportedDicomImageException("Only single-sample images are supported.");
+        }
+
+        var photometric = dataset.GetSingleValueOrDefault(DicomTag.PhotometricInterpretation, string.Empty).Trim();
+        if (photometric != "MONOCHROME2")
+        {
+            throw new UnsupportedDicomImageException("Only MONOCHROME2 images are supported.");
+        }
+
+        if (dataset.Contains(DicomTag.VOILUTSequence))
+        {
+            throw new UnsupportedDicomImageException("VOI LUT Sequence is not supported.");
+        }
+
+        if (dataset.Contains(DicomTag.VOILUTFunction) &&
+            dataset.GetSingleValueOrDefault(DicomTag.VOILUTFunction, string.Empty).Trim() != "LINEAR")
+        {
+            throw new UnsupportedDicomImageException("Only the LINEAR VOI LUT function is supported.");
+        }
+
+        if (!dataset.Contains(DicomTag.PixelData) ||
+            !dataset.Contains(DicomTag.PixelRepresentation) ||
+            !dataset.Contains(DicomTag.BitsAllocated) ||
+            !dataset.Contains(DicomTag.BitsStored) ||
+            !dataset.Contains(DicomTag.HighBit))
+        {
+            throw new InvalidDataException("Required pixel attributes are missing.");
+        }
+
         var rows = dataset.GetSingleValueOrDefault(DicomTag.Rows, (ushort)0);
         var columns = dataset.GetSingleValueOrDefault(DicomTag.Columns, (ushort)0);
-        var bitsAllocated = dataset.GetSingleValueOrDefault(DicomTag.BitsAllocated, (ushort)16);
-        var bitsStored = dataset.GetSingleValueOrDefault(DicomTag.BitsStored, (ushort)12);
+        if (rows == 0 || columns == 0)
+        {
+            throw new InvalidDataException("Image dimensions must be positive.");
+        }
+
+        var bitsAllocated = dataset.GetSingleValueOrDefault(DicomTag.BitsAllocated, (ushort)0);
+        if (bitsAllocated != 8 && bitsAllocated != 16)
+        {
+            throw new UnsupportedDicomImageException("Only 8 and 16 bits allocated are supported.");
+        }
+
+        var bitsStored = dataset.GetSingleValueOrDefault(DicomTag.BitsStored, (ushort)0);
+        if (bitsStored < 1 || bitsStored > bitsAllocated)
+        {
+            throw new UnsupportedDicomImageException("BitsStored must be between 1 and BitsAllocated.");
+        }
+
+        // 시프트되거나 높은 비트에 저장된 레이아웃은 마스킹으로 조용히 해석하지 않고 거부한다
+        // Shifted or high-bit layouts are rejected rather than silently reinterpreted by masking
+        var highBit = dataset.GetSingleValueOrDefault(DicomTag.HighBit, (ushort)0);
+        if (highBit != bitsStored - 1)
+        {
+            throw new UnsupportedDicomImageException("HighBit must equal BitsStored - 1.");
+        }
+
         var pixelRepresentation = dataset.GetSingleValueOrDefault(DicomTag.PixelRepresentation, (ushort)0);
-        var rescaleSlope = dataset.GetSingleValueOrDefault(DicomTag.RescaleSlope, 1.0);
-        var rescaleIntercept = dataset.GetSingleValueOrDefault(DicomTag.RescaleIntercept, 0.0);
+        if (pixelRepresentation > 1)
+        {
+            throw new UnsupportedDicomImageException("PixelRepresentation must be 0 or 1.");
+        }
 
-        var pixelData = DicomPixelData.Create(dataset);
-        var frameData = pixelData.GetFrame(0);
-        var rawPixels = frameData.Data;
+        var slope = dataset.GetSingleValueOrDefault(DicomTag.RescaleSlope, 1.0);
+        var intercept = dataset.GetSingleValueOrDefault(DicomTag.RescaleIntercept, 0.0);
+        if (!double.IsFinite(slope) || slope == 0 || !double.IsFinite(intercept))
+        {
+            throw new InvalidDataException("Rescale slope and intercept must be finite and the slope nonzero.");
+        }
 
-        return new PixelData(
-            Width: columns,
-            Height: rows,
+        // 바이트 수를 64비트로 계산하고 배열 한계를 넘는 크기는 프레임을 읽기 전에 거부한다
+        // Byte count is computed in 64 bits; sizes beyond the array limit are rejected before reading the frame
+        var byteCount = (long)rows * columns * (bitsAllocated / 8);
+        if (byteCount > Array.MaxLength)
+        {
+            throw new UnsupportedDicomImageException("Image size exceeds the supported array limit.");
+        }
+
+        return new ImageHeader(
+            Rows: rows,
+            Columns: columns,
             BitsAllocated: bitsAllocated,
             BitsStored: bitsStored,
             IsSigned: pixelRepresentation == 1,
-            RescaleSlope: rescaleSlope,
-            RescaleIntercept: rescaleIntercept,
-            RawPixels: rawPixels);
+            RescaleSlope: slope,
+            RescaleIntercept: intercept,
+            ByteCount: (int)byteCount);
     }
 
     /// <summary>
-    /// 16비트 픽셀 처리 - Parallel.For 사용
-    /// 16-bit pixel processing - using Parallel.For
+    /// 유효하지 않은 간격은 Unknown으로 둔다 (단위 1mm 대체 없음)
+    /// Invalid spacing becomes Unknown (no 1 mm substitution)
     /// </summary>
-    private static void ProcessPixels16BitParallel(
-        PixelData pixelData,
-        byte[] output,
-        double windowMin,
-        double windowMax,
-        double scale)
+    private static PixelSpacing ReadPixelSpacing(DicomDataset dataset)
     {
-        var rawPixels = pixelData.RawPixels;
-        var slope = pixelData.RescaleSlope;
-        var intercept = pixelData.RescaleIntercept;
-        var pixelCount = pixelData.PixelCount;
-        var isSigned = pixelData.IsSigned;
-
-        // CPU 코어 수에 따라 청크 크기 결정
-        // Determine chunk size based on CPU core count
-        var processorCount = Environment.ProcessorCount;
-        var chunkSize = (pixelCount + processorCount - 1) / processorCount;
-
-        Parallel.For(0, processorCount, coreIndex =>
+        try
         {
-            var start = coreIndex * chunkSize;
-            var end = Math.Min(start + chunkSize, pixelCount);
+            if (dataset.TryGetValues<double>(DicomTag.PixelSpacing, out var values) && values.Length == 2)
+            {
+                // DICOM PixelSpacing = [row(vertical), column(horizontal)]
+                var spacing = new PixelSpacing(X: values[1], Y: values[0]);
+                return spacing.IsValid ? spacing : PixelSpacing.Unknown;
+            }
 
-            ProcessPixelRange16Bit(
-                rawPixels, output, start, end,
-                slope, intercept, windowMin, windowMax, scale, isSigned);
-        });
+            return PixelSpacing.Unknown;
+        }
+        catch (DicomException)
+        {
+            return PixelSpacing.Unknown;
+        }
     }
 
     /// <summary>
-    /// 16비트 픽셀 범위 처리 - unsafe 포인터로 최적화
-    /// 16-bit pixel range processing - optimized with unsafe pointers
+    /// 두 태그가 모두 없으면 기본값. 하나만 있거나 개수가 다르거나 값이 잘못되면 오류(조용한 기본값 금지).
+    /// Both absent => default. Exactly one present, mismatched counts, or invalid values => error (no silent default).
+    /// </summary>
+    private static WindowLevel ReadDefaultWindowLevel(DicomDataset dataset)
+    {
+        var hasWidth = dataset.Contains(DicomTag.WindowWidth);
+        var hasCenter = dataset.Contains(DicomTag.WindowCenter);
+
+        if (!hasWidth && !hasCenter)
+        {
+            return WindowLevel.Default;
+        }
+
+        if (hasWidth != hasCenter)
+        {
+            throw new InvalidDataException("Window Center and Window Width must both be present.");
+        }
+
+        if (!dataset.TryGetValues<double>(DicomTag.WindowWidth, out var widths) ||
+            !dataset.TryGetValues<double>(DicomTag.WindowCenter, out var centers) ||
+            widths.Length == 0 ||
+            widths.Length != centers.Length)
+        {
+            throw new InvalidDataException("Window Center and Window Width must be non-empty pairs of equal count.");
+        }
+
+        // 여러 쌍이면 첫 번째 쌍을 기본값으로 사용한다 / With several pairs, the first pair is the default
+        var width = widths[0];
+        var center = centers[0];
+        if (!double.IsFinite(width) || width < 1 || !double.IsFinite(center))
+        {
+            throw new InvalidDataException("Window width must be at least 1 and both values finite.");
+        }
+
+        return new WindowLevel(width, center);
+    }
+
+    /// <summary>
+    /// 저장 값 읽기: 리틀 엔디언, BitsStored 마스크, 부호 있는 값은 BitsStored-1 비트 기준 부호 확장
+    /// Reads a stored sample: little endian, masked to BitsStored, sign-extended from bit BitsStored-1 when signed
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static unsafe void ProcessPixelRange16Bit(
-        byte[] rawPixels,
-        byte[] output,
-        int start,
-        int end,
-        double slope,
-        double intercept,
-        double windowMin,
-        double windowMax,
-        double scale,
-        bool isSigned)
+    private static int ReadStoredValue(byte[] raw, int index, int sampleSize, int mask, int signBit, bool isSigned)
     {
-        fixed (byte* rawPtr = rawPixels)
-        fixed (byte* outPtr = output)
+        var value = sampleSize == 2
+            ? raw[index * 2] | (raw[index * 2 + 1] << 8)
+            : raw[index];
+
+        value &= mask;
+
+        if (isSigned && (value & signBit) != 0)
         {
-            if (isSigned)
-            {
-                var srcPtr = (short*)(rawPtr + start * 2);
-                var dstPtr = outPtr + start;
+            value -= signBit << 1;
+        }
 
-                for (int i = start; i < end; i++)
-                {
-                    var rawValue = *srcPtr++;
-                    var hounsfield = rawValue * slope + intercept;
-                    *dstPtr++ = ClampToByte(hounsfield, windowMin, windowMax, scale);
-                }
-            }
-            else
-            {
-                var srcPtr = (ushort*)(rawPtr + start * 2);
-                var dstPtr = outPtr + start;
+        return value;
+    }
 
-                for (int i = start; i < end; i++)
-                {
-                    var rawValue = *srcPtr++;
-                    var hounsfield = rawValue * slope + intercept;
-                    *dstPtr++ = ClampToByte(hounsfield, windowMin, windowMax, scale);
-                }
-            }
+    private static void ValidateWindowLevel(WindowLevel windowLevel)
+    {
+        if (!double.IsFinite(windowLevel.WindowCenter))
+        {
+            throw new ArgumentOutOfRangeException(nameof(windowLevel), "WindowCenter must be finite.");
+        }
+
+        if (!double.IsFinite(windowLevel.WindowWidth) || windowLevel.WindowWidth < 1)
+        {
+            throw new ArgumentOutOfRangeException(nameof(windowLevel), "WindowWidth must be finite and at least 1.");
         }
     }
 
     /// <summary>
-    /// 16비트 픽셀 처리 - 단일 스레드 최적화 버전
-    /// 16-bit pixel processing - single-threaded optimized version
+    /// 픽셀 수를 64비트로 계산해 검증하고 int 픽셀 수를 반환한다.
+    /// Validates the pixel count (computed in 64 bits) and returns it as an int.
     /// </summary>
-    private static unsafe void ProcessPixels16BitOptimized(
-        PixelData pixelData,
-        byte[] output,
-        double windowMin,
-        double windowMax,
-        double scale)
+    private static int ValidatePixelData(PixelData pixelData)
     {
-        var rawPixels = pixelData.RawPixels;
-        var slope = pixelData.RescaleSlope;
-        var intercept = pixelData.RescaleIntercept;
-        var pixelCount = pixelData.PixelCount;
-
-        fixed (byte* rawPtr = rawPixels)
-        fixed (byte* outPtr = output)
+        if (pixelData.Width <= 0 || pixelData.Height <= 0)
         {
-            if (pixelData.IsSigned)
-            {
-                var srcPtr = (short*)rawPtr;
-                var dstPtr = outPtr;
+            throw new ArgumentException("Width and height must be positive.", nameof(pixelData));
+        }
 
-                // SIMD 처리 가능한 부분
-                // SIMD-processable part
-                var vectorCount = pixelCount / VectorSize * VectorSize;
+        if (pixelData.BitsAllocated != 8 && pixelData.BitsAllocated != 16)
+        {
+            throw new ArgumentException("Only 8 and 16 bits allocated are supported.", nameof(pixelData));
+        }
 
-                // 메인 루프 - 언롤링으로 최적화
-                // Main loop - optimized with unrolling
-                for (int i = 0; i < pixelCount; i++)
-                {
-                    var rawValue = srcPtr[i];
-                    var hounsfield = rawValue * slope + intercept;
-                    dstPtr[i] = ClampToByte(hounsfield, windowMin, windowMax, scale);
-                }
-            }
-            else
-            {
-                var srcPtr = (ushort*)rawPtr;
-                var dstPtr = outPtr;
+        if (pixelData.BitsStored < 1 || pixelData.BitsStored > pixelData.BitsAllocated)
+        {
+            throw new ArgumentException("BitsStored must be between 1 and BitsAllocated.", nameof(pixelData));
+        }
 
-                for (int i = 0; i < pixelCount; i++)
-                {
-                    var rawValue = srcPtr[i];
-                    var hounsfield = rawValue * slope + intercept;
-                    dstPtr[i] = ClampToByte(hounsfield, windowMin, windowMax, scale);
-                }
-            }
+        if (!double.IsFinite(pixelData.RescaleSlope) || !double.IsFinite(pixelData.RescaleIntercept))
+        {
+            throw new ArgumentException("Rescale slope and intercept must be finite.", nameof(pixelData));
+        }
+
+        var count = (long)pixelData.Width * pixelData.Height;
+        var requiredBytes = count * (pixelData.BitsAllocated / 8);
+        if (requiredBytes > Array.MaxLength)
+        {
+            throw new ArgumentException("Image size exceeds the supported array limit.", nameof(pixelData));
+        }
+
+        if (pixelData.RawPixels.Length < requiredBytes)
+        {
+            throw new ArgumentException("Raw pixel buffer is shorter than the pixel count requires.", nameof(pixelData));
+        }
+
+        return (int)count;
+    }
+
+    /// <summary>
+    /// DICOM PS3.3 C.11.2.1.2.1 VOI LINEAR의 상수 경계. 출력은 연속값 y를 0 방향으로 절삭(truncate)하고 [0,255]로 고정한다.
+    /// Constant bounds of DICOM PS3.3 C.11.2.1.2.1 VOI LINEAR. The continuous output y is truncated toward zero and clamped to [0,255].
+    /// </summary>
+    private readonly record struct VoiLinear(double Offset, double Low, double High, double Denominator)
+    {
+        public static VoiLinear From(WindowLevel windowLevel)
+        {
+            var offset = windowLevel.WindowCenter - 0.5;
+            var half = (windowLevel.WindowWidth - 1.0) / 2.0;
+            return new VoiLinear(offset, offset - half, offset + half, windowLevel.WindowWidth - 1.0);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public byte Apply(double x)
+        {
+            if (x <= Low) return 0;
+            if (x > High) return 255;
+
+            // Low == High (w == 1) makes this branch unreachable, so Denominator is never zero here
+            // w == 1이면 Low == High이므로 이 분기는 도달하지 않아 Denominator는 0이 아니다
+            var y = ((x - Offset) / Denominator + 0.5) * 255.0;
+            return (byte)Math.Clamp(Math.Truncate(y), 0.0, 255.0);
         }
     }
 
-    /// <summary>
-    /// 8비트 픽셀 처리 - Parallel.For 사용
-    /// 8-bit pixel processing - using Parallel.For
-    /// </summary>
-    private static void ProcessPixels8BitParallel(
-        PixelData pixelData,
-        byte[] output,
-        double windowMin,
-        double windowMax,
-        double scale)
-    {
-        var rawPixels = pixelData.RawPixels;
-        var slope = pixelData.RescaleSlope;
-        var intercept = pixelData.RescaleIntercept;
-        var pixelCount = pixelData.PixelCount;
-
-        var processorCount = Environment.ProcessorCount;
-        var chunkSize = (pixelCount + processorCount - 1) / processorCount;
-
-        Parallel.For(0, processorCount, coreIndex =>
-        {
-            var start = coreIndex * chunkSize;
-            var end = Math.Min(start + chunkSize, pixelCount);
-
-            ProcessPixelRange8Bit(
-                rawPixels, output, start, end,
-                slope, intercept, windowMin, windowMax, scale);
-        });
-    }
-
-    /// <summary>
-    /// 8비트 픽셀 범위 처리
-    /// 8-bit pixel range processing
-    /// </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static unsafe void ProcessPixelRange8Bit(
-        byte[] rawPixels,
-        byte[] output,
-        int start,
-        int end,
-        double slope,
-        double intercept,
-        double windowMin,
-        double windowMax,
-        double scale)
-    {
-        fixed (byte* rawPtr = rawPixels)
-        fixed (byte* outPtr = output)
-        {
-            var srcPtr = rawPtr + start;
-            var dstPtr = outPtr + start;
-
-            for (int i = start; i < end; i++)
-            {
-                var rawValue = *srcPtr++;
-                var rescaled = rawValue * slope + intercept;
-                *dstPtr++ = ClampToByte(rescaled, windowMin, windowMax, scale);
-            }
-        }
-    }
-
-    /// <summary>
-    /// 8비트 픽셀 처리 - 단일 스레드 최적화 버전
-    /// 8-bit pixel processing - single-threaded optimized version
-    /// </summary>
-    private static unsafe void ProcessPixels8BitOptimized(
-        PixelData pixelData,
-        byte[] output,
-        double windowMin,
-        double windowMax,
-        double scale)
-    {
-        var rawPixels = pixelData.RawPixels;
-        var slope = pixelData.RescaleSlope;
-        var intercept = pixelData.RescaleIntercept;
-        var pixelCount = pixelData.PixelCount;
-
-        fixed (byte* rawPtr = rawPixels)
-        fixed (byte* outPtr = output)
-        {
-            for (int i = 0; i < pixelCount; i++)
-            {
-                var rawValue = rawPtr[i];
-                var rescaled = rawValue * slope + intercept;
-                outPtr[i] = ClampToByte(rescaled, windowMin, windowMax, scale);
-            }
-        }
-    }
-
-    /// <summary>
-    /// Window/Level 값을 0-255 범위로 클램프
-    /// Clamp Window/Level value to 0-255 range
-    /// </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static byte ClampToByte(double value, double windowMin, double windowMax, double scale)
-    {
-        if (value <= windowMin) return 0;
-        if (value >= windowMax) return 255;
-        return (byte)((value - windowMin) * scale);
-    }
+    private sealed record ImageHeader(
+        int Rows,
+        int Columns,
+        int BitsAllocated,
+        int BitsStored,
+        bool IsSigned,
+        double RescaleSlope,
+        double RescaleIntercept,
+        int ByteCount);
 }

@@ -1,4 +1,5 @@
 using System.Buffers;
+
 using DicomViewer.Application.DTOs;
 using DicomViewer.Application.Interfaces;
 using DicomViewer.Domain.ValueObjects;
@@ -28,13 +29,13 @@ public sealed class ThumbnailService
     {
         try
         {
-            var pixelData = _imageService.LoadPixelDataAsync(filePath).GetAwaiter().GetResult();
-            var windowLevel = _imageService.GetDefaultWindowLevel(filePath);
-            var pixels = _imageService.ApplyWindowLevel(pixelData, windowLevel);
+            var image = _imageService.LoadImageAsync(filePath).GetAwaiter().GetResult();
+            var pixels = new byte[image.Pixels.PixelCount];
+            _imageService.ApplyWindowLevel(image.Pixels, image.DefaultWindowLevel, pixels);
 
             // 썸네일 다운스케일
             // Downsample for thumbnail
-            var thumbnail = DownsampleImage(pixels, pixelData.Width, pixelData.Height, targetSize);
+            var thumbnail = DownsampleImage(pixels, image.Pixels.Width, image.Pixels.Height, targetSize);
 
             return new ThumbnailDto(index, thumbnail, targetSize, targetSize);
         }

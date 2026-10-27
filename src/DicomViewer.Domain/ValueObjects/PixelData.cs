@@ -14,7 +14,7 @@ public sealed record PixelData(
     double RescaleIntercept,
     byte[] RawPixels)
 {
-    public int PixelCount => Width * Height;
+    public int PixelCount => checked(Width * Height);
 
     public static PixelData Empty => new(0, 0, 8, 8, false, 1.0, 0.0, []);
 }

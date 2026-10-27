@@ -1,7 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 
-using DicomViewer.DatasetTool;
+using DicomViewer.Infrastructure.Datasets;
 
 using FellowOakDicom;
 using FellowOakDicom.IO.Buffer;

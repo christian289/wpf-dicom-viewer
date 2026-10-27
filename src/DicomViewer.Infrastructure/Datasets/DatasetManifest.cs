@@ -1,11 +1,13 @@
 using System.Text.Json;
 
-namespace DicomViewer.DatasetTool;
+namespace DicomViewer.Infrastructure.Datasets;
 
 public static class DatasetDefinition
 {
     public const string Id = "vhp-female-ankle-v1";
     public const int FileCount = 150;
+    // Fixed by the dataset definition: the sanitizer only accepts CT Image Storage with Modality CT.
+    public const string Modality = "CT";
     public const string SourceUrl = "https://doi.org/10.7910/DVN/3JDZCT";
     public const string MetadataUrl = "https://dataverse.harvard.edu/api/datasets/7575015/versions/1.0";
     public const string SourceVersion = "1.0";

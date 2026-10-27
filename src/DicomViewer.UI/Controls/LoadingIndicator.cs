@@ -6,24 +6,19 @@ namespace DicomViewer.UI.Controls;
 /// </summary>
 public sealed class LoadingIndicator : Control
 {
-    // Freeze된 기본 브러시 (성능 최적화)
-    // Frozen default brushes (performance optimization)
-    private static readonly Brush DefaultSpinnerColor;
-    private static readonly Brush DefaultTrackColor;
+    // Freeze된 기본(폴백) 브러시: 호스트가 테마를 제공하지 않을 때 사용. 정적 필드 초기화로 DP 기본값에 안전하게 사용된다
+    // Frozen default (fallback) brushes used when the host provides no theme; static field initializers make them safe as DP defaults
+    private static readonly Brush DefaultSpinnerColor = BrushFactory.Frozen(0, 120, 212);
+    private static readonly Brush DefaultTrackColor = BrushFactory.Frozen(62, 62, 66);
 
     static LoadingIndicator()
     {
         DefaultStyleKeyProperty.OverrideMetadata(
             typeof(LoadingIndicator),
             new FrameworkPropertyMetadata(typeof(LoadingIndicator)));
-
-        // Frozen 브러시 생성
-        // Create frozen brushes
-        DefaultSpinnerColor = new SolidColorBrush(Color.FromRgb(0, 120, 212));
-        DefaultSpinnerColor.Freeze();
-        DefaultTrackColor = new SolidColorBrush(Color.FromRgb(62, 62, 66));
-        DefaultTrackColor.Freeze();
     }
+
+    protected override AutomationPeer OnCreateAutomationPeer() => new LoadingIndicatorAutomationPeer(this);
 
     #region Dependency Properties
 

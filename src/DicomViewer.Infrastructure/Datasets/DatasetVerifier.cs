@@ -5,7 +5,7 @@ using System.Text.RegularExpressions;
 
 using FellowOakDicom;
 
-namespace DicomViewer.DatasetTool;
+namespace DicomViewer.Infrastructure.Datasets;
 
 /// <summary>
 /// Offline integrity and fixed-policy verification of a stored sanitized dataset.
@@ -54,7 +54,7 @@ public static class DatasetVerifier
         WriteIndented = false
     };
 
-    public static VerificationResult Verify(string manifestPath, int expectedCount = DatasetDefinition.FileCount)
+    public static VerificationResult Verify(string manifestPath, int expectedCount = DatasetDefinition.FileCount, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(manifestPath);
         ArgumentOutOfRangeException.ThrowIfLessThan(expectedCount, 1);
@@ -77,6 +77,7 @@ public static class DatasetVerifier
         long bytes = 0;
         foreach (var file in files)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             VerifyFile(file);
             bytes += file.Entry.Size;
         }

@@ -1,13 +1,13 @@
 namespace DicomViewer.Domain.ValueObjects;
 
 /// <summary>
-/// 측정 선분 데이터
-/// Measurement line data
+/// 측정 선분 데이터. LengthMm은 보정 간격이 확인된 경우에만 값이 있으며 미확인이면 null이다(px 값을 mm로 저장하지 않는다).
+/// Measurement line data. LengthMm has a value only when calibration is known; null when unknown (pixel values are never stored as mm).
 /// </summary>
 public sealed record MeasurementLine(
     Point2D StartPoint,
     Point2D EndPoint,
-    double LengthMm,
+    double? LengthMm,
     string Label)
 {
     /// <summary>

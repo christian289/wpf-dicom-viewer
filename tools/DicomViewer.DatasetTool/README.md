@@ -87,7 +87,8 @@ Git LFS는 저장 방식일 뿐입니다. 개인정보 삭제, 검토, 라이선
 ## 라이선스 범위
 
 - `tools/DicomViewer.DatasetTool/`의 **새** 코드는 MIT 라이선스입니다(이 디렉터리의 `LICENSE` 참고).
-- 이 도구는 저장소 루트나 기존 코드의 라이선스를 바꾸지 않습니다.
+- 도구가 공유하는 `DatasetManifest.cs`, `DatasetVerifier.cs`, `DicomSanitizer.cs`는 `src/DicomViewer.Infrastructure/Datasets/`로 옮겼으며 같은 MIT 라이선스(해당 디렉터리의 `LICENSE`)가 이 세 파일에만 적용됩니다. 앱은 `DatasetVerifier`를 호출해 기본 입력을 검증하며 도구 실행 파일에는 의존하지 않습니다.
+- 이 도구와 위 이동은 저장소 루트나 기존 코드의 라이선스를 바꾸지 않습니다.
 - 데이터셋(`data/dicom/vhp-female-ankle-v1/`)은 CC0-1.0이며 위의 NLM 출처 표시를 유지합니다.
 
 ## 한계와 주장하지 않는 것

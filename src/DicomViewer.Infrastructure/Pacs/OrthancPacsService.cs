@@ -210,7 +210,7 @@ public sealed class OrthancPacsService(HttpClient httpClient, string baseUrl) : 
                 SeriesNumber: GetIntProperty(mainDicomTags, "SeriesNumber"),
                 Modality: GetStringProperty(mainDicomTags, "Modality") ?? "Unknown",
                 NumberOfInstances: instances.Count,
-                Instances: instances.OrderBy(i => i.SliceLocation ?? i.InstanceNumber).ToList());
+                Instances: instances.OrderBy(i => i.InstanceNumber).ThenBy(i => i.SopInstanceUid, StringComparer.Ordinal).ToList());
         }
         catch
         {
@@ -242,7 +242,10 @@ public sealed class OrthancPacsService(HttpClient httpClient, string baseUrl) : 
                 FilePath: $"{_baseUrl}/instances/{orthancInstanceId}/file",
                 Rows: GetIntProperty(mainDicomTags, "Rows"),
                 Columns: GetIntProperty(mainDicomTags, "Columns"),
-                SliceLocation: GetDoubleProperty(mainDicomTags, "SliceLocation"));
+                SeriesInstanceUid: GetStringProperty(mainDicomTags, "SeriesInstanceUID"),
+                FrameOfReferenceUid: GetStringProperty(mainDicomTags, "FrameOfReferenceUID"),
+                ImagePositionPatient: ParseDoubleList(GetStringProperty(mainDicomTags, "ImagePositionPatient")),
+                ImageOrientationPatient: ParseDoubleList(GetStringProperty(mainDicomTags, "ImageOrientationPatient")));
         }
         catch
         {
@@ -305,20 +308,27 @@ public sealed class OrthancPacsService(HttpClient httpClient, string baseUrl) : 
         return 0;
     }
 
-    private static double? GetDoubleProperty(JsonElement element, string propertyName)
+    /// <summary>
+    /// Orthanc 문자열 태그 "a\\b\\c"를 double 배열로 변환. 입력이 없으면 null, 파싱 실패는 빈 배열 (잘못된 기하로 처리)
+    /// Parses an Orthanc string tag "a\\b\\c" into doubles. Null when absent; empty array on parse failure (treated as malformed geometry)
+    /// </summary>
+    private static double[]? ParseDoubleList(string? value)
     {
-        if (element.TryGetProperty(propertyName, out var prop))
+        if (value is null)
         {
-            if (prop.ValueKind == JsonValueKind.Number)
+            return null;
+        }
+
+        var parts = value.Split('\\');
+        var result = new double[parts.Length];
+        for (var i = 0; i < parts.Length; i++)
+        {
+            if (!double.TryParse(parts[i], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out result[i]))
             {
-                return prop.GetDouble();
-            }
-            if (prop.ValueKind == JsonValueKind.String &&
-                double.TryParse(prop.GetString(), out var value))
-            {
-                return value;
+                return [];
             }
         }
-        return null;
+
+        return result;
     }
 }

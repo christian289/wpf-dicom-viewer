@@ -8,23 +8,17 @@ namespace DicomViewer.UI.Controls;
 /// </summary>
 public sealed class IconToggleButton : ToggleButton
 {
-    // Freeze된 기본 브러시 (성능 최적화)
-    // Frozen default brushes (performance optimization)
-    private static readonly Brush DefaultHoverBackground;
-    private static readonly Brush DefaultCheckedBackground;
+    // Freeze된 기본(폴백) 브러시: 호스트가 테마를 제공하지 않을 때 사용. 정적 필드 초기화로 DP 기본값에 안전하게 사용된다
+    // Frozen default (fallback) brushes used when the host provides no theme; static field initializers make them safe as DP defaults
+    private static readonly Brush DefaultHoverBackground = BrushFactory.Frozen(62, 62, 66);
+    private static readonly Brush DefaultCheckedBackground = BrushFactory.Frozen(0, 120, 212);
+    private static readonly Brush DefaultCheckedForeground = BrushFactory.Frozen(255, 255, 255);
 
     static IconToggleButton()
     {
         DefaultStyleKeyProperty.OverrideMetadata(
             typeof(IconToggleButton),
             new FrameworkPropertyMetadata(typeof(IconToggleButton)));
-
-        // Frozen 브러시 생성
-        // Create frozen brushes
-        DefaultHoverBackground = new SolidColorBrush(Color.FromRgb(62, 62, 66));
-        DefaultHoverBackground.Freeze();
-        DefaultCheckedBackground = new SolidColorBrush(Color.FromRgb(0, 120, 212));
-        DefaultCheckedBackground.Freeze();
     }
 
     #region Dependency Properties
@@ -156,7 +150,7 @@ public sealed class IconToggleButton : ToggleButton
             nameof(CheckedForeground),
             typeof(Brush),
             typeof(IconToggleButton),
-            new PropertyMetadata(Brushes.White));
+            new PropertyMetadata(DefaultCheckedForeground));
 
     public Brush CheckedForeground
     {

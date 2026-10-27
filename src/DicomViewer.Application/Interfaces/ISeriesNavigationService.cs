@@ -1,5 +1,3 @@
-using DicomViewer.Application.DTOs;
-
 namespace DicomViewer.Application.Interfaces;
 
 /// <summary>
@@ -19,6 +17,12 @@ public interface ISeriesNavigationService
     /// Total count
     /// </summary>
     int TotalCount { get; }
+
+    /// <summary>
+    /// 마지막 SetSeries 기준 공간 정렬 상태. Spatial이 아니면 순서는 물리 위치가 아니다.
+    /// Spatial ordering status for the last SetSeries call. Unless Spatial, the order is not a physical order.
+    /// </summary>
+    SeriesGeometryStatus GeometryStatus { get; }
 
     /// <summary>
     /// 시리즈 설정

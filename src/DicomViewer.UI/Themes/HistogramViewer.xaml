@@ -1,13 +1,15 @@
-<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:controls="clr-namespace:DicomViewer.UI.Controls">
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:controls="clr-namespace:DicomViewer.UI.Controls">
 
-    <!-- HistogramViewer: FrameworkElement 기반으로 OnRender에서 직접 렌더링 -->
-    <!-- HistogramViewer: FrameworkElement-based, renders directly in OnRender -->
+    <!--  HistogramViewer: FrameworkElement 기반으로 OnRender에서 직접 렌더링  -->
+    <!--  HistogramViewer: FrameworkElement-based, renders directly in OnRender  -->
     <Style TargetType="{x:Type controls:HistogramViewer}">
         <Setter Property="MinWidth" Value="200" />
         <Setter Property="MinHeight" Value="100" />
         <Setter Property="MaxHeight" Value="200" />
+        <Setter Property="PlotBackground" Value="{DynamicResource CardBackgroundFillColorDefaultBrush}" />
+        <Setter Property="PlotBorderBrush" Value="{DynamicResource CardStrokeColorDefaultBrush}" />
+        <Setter Property="BarBrush" Value="{DynamicResource AccentFillColorDefaultBrush}" />
+        <Setter Property="WindowRangeBrush" Value="{DynamicResource SystemFillColorCautionBrush}" />
     </Style>
 
 </ResourceDictionary>

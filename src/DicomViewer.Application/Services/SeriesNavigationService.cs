@@ -1,4 +1,3 @@
-using DicomViewer.Application.DTOs;
 using DicomViewer.Application.Interfaces;
 
 namespace DicomViewer.Application.Services;
@@ -11,15 +10,17 @@ public sealed class SeriesNavigationService : ISeriesNavigationService
 {
     private IReadOnlyList<DicomInstanceDto> _instances = [];
     private int _currentIndex;
+    private SeriesGeometryStatus _geometryStatus = SeriesGeometryStatus.Empty;
 
     public int CurrentIndex => _currentIndex;
     public int TotalCount => _instances.Count;
+    public SeriesGeometryStatus GeometryStatus => _geometryStatus;
 
     public void SetSeries(IReadOnlyList<DicomInstanceDto> instances)
     {
-        _instances = instances
-            .OrderBy(i => i.SliceLocation ?? i.InstanceNumber)
-            .ToList();
+        var ordering = SeriesOrdering.Order(instances);
+        _instances = ordering.Instances;
+        _geometryStatus = ordering.Status;
         _currentIndex = 0;
     }
 
@@ -75,5 +76,6 @@ public sealed class SeriesNavigationService : ISeriesNavigationService
     {
         _instances = [];
         _currentIndex = 0;
+        _geometryStatus = SeriesGeometryStatus.Empty;
     }
 }
