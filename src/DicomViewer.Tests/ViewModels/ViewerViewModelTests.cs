@@ -182,6 +182,109 @@ public sealed class ViewerViewModelTests
     });
 
     [Fact]
+    public Task Render_replaced_by_a_window_level_change_during_a_slice_load_keeps_loading_until_the_latest_render_publishes() => RunAsync(async h =>
+    {
+        var (shown, latest) = await SupersedeFirstRenderOfSlice2Async(h);
+        var frames = h.RecordFrames();
+
+        // 대체된 렌더는 취소로 끝났지만 최신 렌더가 끝나기 전에는 이전 슬라이스가 Ready로 보이면 안 된다.
+        // The replaced render ended cancelled, but until the latest render settles the previous slice must not appear as Ready.
+        h.Vm.IsLoading.Should().BeTrue();
+        h.Vm.State.Should().Be(ViewerState.Loading);
+        h.Vm.Frame.Should().BeSameAs(shown);
+        frames.Should().BeEmpty();
+
+        latest.Release.Set();
+        await h.Vm.WaitForIdleAsync();
+
+        frames.Should().Equal("A2");
+        h.Vm.Frame!.Pixels[0].Should().Be(ControlledImageService.Marker(2, 5));
+        h.Vm.IsLoading.Should().BeFalse();
+        h.Vm.ErrorMessage.Should().BeNull();
+        h.Vm.State.Should().Be(ViewerState.Ready);
+    });
+
+    [Fact]
+    public Task Latest_render_failing_after_the_replaced_one_settles_in_Error_instead_of_staying_Loading() => RunAsync(async h =>
+    {
+        var (shown, latest) = await SupersedeFirstRenderOfSlice2Async(h);
+        var frames = h.RecordFrames();
+
+        latest.Failure = new InvalidOperationException("render failed");
+        latest.Release.Set();
+        await h.Vm.WaitForIdleAsync();
+
+        h.Vm.State.Should().Be(ViewerState.Error);
+        h.Vm.ErrorMessage.Should().NotBeNullOrWhiteSpace();
+        h.Vm.IsLoading.Should().BeFalse();
+        h.Vm.Frame.Should().BeSameAs(shown);
+        frames.Should().BeEmpty();
+    });
+
+    [Fact]
+    public Task Selecting_another_slice_while_the_replaced_render_is_pending_ignores_the_old_result_and_leaves_loading_to_the_new_request() => RunAsync(async h =>
+    {
+        var (shown, latest) = await SupersedeFirstRenderOfSlice2Async(h);
+        var frames = h.RecordFrames();
+
+        h.Vm.CurrentSliceIndex = 2;
+
+        var arrived = h.Ui.NextPostAsync();
+        latest.Release.Set();
+        await arrived.WaitAsync(DeadlockGuard);
+        await h.Ui.DrainAsync();
+
+        frames.Should().BeEmpty();
+        h.Vm.Frame.Should().BeSameAs(shown);
+        h.Vm.IsLoading.Should().BeTrue();
+        h.Vm.State.Should().Be(ViewerState.Loading);
+
+        await h.CompleteAndShowAsync("A", 3);
+        await h.Vm.WaitForIdleAsync();
+
+        frames.Should().Equal("A3");
+        h.Vm.Frame!.Pixels[0].Should().Be(ControlledImageService.Marker(3, 5));
+        h.Vm.IsLoading.Should().BeFalse();
+        h.Vm.State.Should().Be(ViewerState.Ready);
+    });
+
+    [Fact]
+    public Task Clearing_the_selection_while_the_replaced_render_is_pending_leaves_nothing_published_or_loading() => RunAsync(async h =>
+    {
+        var (_, latest) = await SupersedeFirstRenderOfSlice2Async(h);
+
+        h.Vm.SelectedSeries = null;
+
+        h.Vm.IsLoading.Should().BeFalse();
+        h.Vm.Frame.Should().BeNull();
+
+        var arrived = h.Ui.NextPostAsync();
+        latest.Release.Set();
+        await arrived.WaitAsync(DeadlockGuard);
+        await h.Ui.DrainAsync();
+        await h.Vm.WaitForIdleAsync();
+
+        h.Vm.Frame.Should().BeNull();
+        h.Vm.IsLoading.Should().BeFalse();
+        h.Vm.State.Should().Be(ViewerState.Empty);
+    });
+
+    [Fact]
+    public Task Closing_while_the_replaced_render_is_pending_waits_for_it_and_publishes_nothing() => RunAsync(async h =>
+    {
+        var (shown, latest) = await SupersedeFirstRenderOfSlice2Async(h);
+        var frames = h.RecordFrames();
+
+        var closing = h.Vm.CloseAsync();
+        latest.Release.Set();
+        await closing.WaitAsync(DeadlockGuard);
+
+        frames.Should().BeEmpty();
+        h.Vm.Frame.Should().BeSameAs(shown);
+        h.Vm.IsLoading.Should().BeFalse();
+    });
+
+    [Fact]
     public Task Window_level_changed_while_another_slice_is_loading_applies_to_that_slice_and_never_re_renders_the_previous_one() => RunAsync(async h =>
     {
         await h.OpenAsync(ViewerData.Dataset(ViewerData.SpatialSeries("A", 2)));
@@ -571,6 +674,35 @@ public sealed class ViewerViewModelTests
         notifications.Should().Be(2);
         await Task.CompletedTask;
     });
+
+    /// <summary>
+    /// 슬라이스 2 로드가 끝난 뒤 첫 렌더(너비 8)가 Window/Level 변경(너비 5)으로 대체되어 취소로 끝난 상태를 만든다.
+    /// 반환 시 최신 렌더(너비 5)는 풀 스레드에서 멈춰 있고, 대체된 렌더의 연속은 UI 컨텍스트에서 모두 실행되었다.
+    /// Builds the state where the first render of slice 2 (width 8) was replaced by a window change (width 5) and ended cancelled.
+    /// On return the latest render (width 5) is held on the pool and every continuation of the replaced render has run on the UI context.
+    /// </summary>
+    private static async Task<(RenderedFrame Shown, ControlledImageService.RenderGate Latest)> SupersedeFirstRenderOfSlice2Async(Harness h)
+    {
+        await h.OpenAsync(ViewerData.Dataset(ViewerData.SpatialSeries("A", 3)));
+        await h.CompleteAndShowAsync("A", 1);
+        var shown = h.Vm.Frame!;
+
+        var superseded = h.Images.HoldRender(8);
+        var latest = h.Images.HoldRender(5);
+        h.Vm.CurrentSliceIndex = 1;
+        h.Images.Load(ViewerData.Path("A", 2)).SetResult(ViewerData.Image(2));
+        await superseded.Entered.Task.WaitAsync(DeadlockGuard);
+
+        h.Vm.WindowWidth = 5;
+        await latest.Entered.Task.WaitAsync(DeadlockGuard);
+
+        var arrived = h.Ui.NextPostAsync();
+        superseded.Release.Set();
+        await arrived.WaitAsync(DeadlockGuard);
+        await h.Ui.DrainAsync();
+
+        return (shown, latest);
+    }
 
     private static async Task RunAsync(
         Func<Harness, Task> body,

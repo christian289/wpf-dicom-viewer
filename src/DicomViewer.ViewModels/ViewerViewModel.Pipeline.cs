@@ -25,6 +25,7 @@ public sealed partial class ViewerViewModel
     // Window/Level render requests
     private long _renderEpoch;
     private CancellationTokenSource? _renderCts;
+    private Task? _latestRender;
     private long _frameSequence;
 
     private LoadedImage? _loaded;
@@ -247,6 +248,13 @@ public sealed partial class ViewerViewModel
             }
 
             await RequestRender();
+
+            // 로드는 자기 영상의 최신 렌더가 끝날 때까지 IsLoading을 소유한다: 대체된 렌더의 취소 완료로 이전 슬라이스가 Ready가 되지 않게 한다.
+            // A load owns IsLoading until the latest render of its image settles: a replaced, cancelled render must not expose the previous slice as Ready.
+            while (!IsStale(epoch, cancellationToken) && _latestRender is { IsCompleted: false } latest)
+            {
+                await latest;
+            }
         }
         catch (Exception ex)
         {
@@ -280,7 +288,7 @@ public sealed partial class ViewerViewModel
         var cts = _renderCts = new CancellationTokenSource();
         var request = new RenderRequest(source, new WindowLevel(WindowWidth, WindowCenter), ShowHistogram);
 
-        return Track(RenderAsync(request, epoch, cts.Token));
+        return _latestRender = Track(RenderAsync(request, epoch, cts.Token));
     }
 
     private async Task RenderAsync(RenderRequest request, long epoch, CancellationToken cancellationToken)
@@ -369,6 +377,7 @@ public sealed partial class ViewerViewModel
     {
         _renderEpoch++;
         Retire(ref _renderCts);
+        _latestRender = null;
     }
 
     private static void Retire(ref CancellationTokenSource? source)

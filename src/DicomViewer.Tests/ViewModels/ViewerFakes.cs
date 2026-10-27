@@ -100,6 +100,10 @@ internal sealed class ControlledImageService : IDicomImageService
         {
             gate.Entered.TrySetResult();
             gate.Release.Wait();
+            if (gate.Failure is { } failure)
+            {
+                throw failure;
+            }
         }
 
         // 슬라이스와 너비를 모두 반영한 값: 어느 렌더가 어느 버퍼에 썼는지 내용으로 구별된다.
@@ -114,6 +118,9 @@ internal sealed class ControlledImageService : IDicomImageService
         public TaskCompletionSource Entered { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
         public ManualResetEventSlim Release { get; } = new();
+
+        /// <summary>설정하면 풀려난 렌더가 이 예외로 실패한다 / When set, the released render fails with this exception</summary>
+        public Exception? Failure { get; set; }
     }
 }
 
