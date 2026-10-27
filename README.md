@@ -4,6 +4,24 @@
 - 잘 모르는 사람도 이제는 AI를 이용하여 어느 정도까지는 제품을 만들 수 있음을 시사.
 - .claude 폴더 안의 claude skill을 사용하여 개발.
 
+## 개발 환경 및 빌드
+
+- 기준 SDK: .NET SDK **10.0.403**. `global.json`의 `latestFeature` 정책에 따라 같은 .NET 10의 최신 설치 SDK를 사용합니다.
+- Visual Studio에서 작업할 경우 .NET 10과 `.slnx`를 지원하는 Visual Studio 2026을 사용합니다.
+- WPF 및 공통 계층의 기존 .NET 10 대상은 유지합니다. OpenSilver 실행 프로젝트는 호환성을 위해 .NET 9, 공유 라이브러리는 .NET Standard 2.0을 유지합니다.
+- 이전 개발 환경의 워크로드 `10.0.101` 고정은 제거했습니다. 전체 솔루션 빌드에는 현재 SDK의 `wasm-tools-net9` 워크로드가 필요합니다.
+
+저장소 루트에서 실행:
+
+```powershell
+dotnet workload restore src/DicomViewer.slnx
+dotnet build src/DicomViewer.slnx
+dotnet test src/DicomViewer.Tests/DicomViewer.Tests.csproj
+dotnet run --project src/DicomViewer.WpfApp/DicomViewer.WpfApp.csproj
+```
+
+SDK 설정 변경 후 이미 열린 Visual Studio에서는 솔루션을 닫았다가 다시 열어 프로젝트를 다시 로드합니다.
+
 ## User Guide (사용법)
 
 ### Main Navigation (화면 전환)
