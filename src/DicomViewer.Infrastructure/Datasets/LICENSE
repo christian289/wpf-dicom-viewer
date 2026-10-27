@@ -1,3 +1,5 @@
+Scope: This license applies only to DatasetManifest.cs, DatasetVerifier.cs, and DicomSanitizer.cs. It does not grant a license to ManifestDicomDatasetSource.cs or other repository files.
+
 MIT License
 
 Copyright (c) 2026 christian289
