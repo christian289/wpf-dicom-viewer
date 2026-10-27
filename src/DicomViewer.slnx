@@ -5,6 +5,9 @@
     <Project Path="DicomViewer.Domain/DicomViewer.Domain.csproj" />
     <Project Path="DicomViewer.Application/DicomViewer.Application.csproj" />
   </Folder>
+  <Folder Name="/Tools/">
+    <Project Path="../tools/DicomViewer.DatasetTool/DicomViewer.DatasetTool.csproj" />
+  </Folder>
   <Folder Name="/OpenSilver/App/">
     <Project Path="DicomViewer.OpenSilverApp/DicomViewer.OpenSilverApp.Browser/DicomViewer.OpenSilverApp.Browser.csproj" />
     <Project Path="DicomViewer.OpenSilverApp/DicomViewer.OpenSilverApp.Simulator/DicomViewer.OpenSilverApp.Simulator.csproj" />

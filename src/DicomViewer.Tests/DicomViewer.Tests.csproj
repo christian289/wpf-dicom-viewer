@@ -26,6 +26,7 @@
     <ProjectReference Include="..\DicomViewer.Infrastructure\DicomViewer.Infrastructure.csproj" />
     <ProjectReference Include="..\DicomViewer.ViewModels\DicomViewer.ViewModels.csproj" />
     <ProjectReference Include="..\DicomViewer.Domain\DicomViewer.Domain.csproj" />
+    <ProjectReference Include="..\..\tools\DicomViewer.DatasetTool\DicomViewer.DatasetTool.csproj" />
   </ItemGroup>
 
 </Project>

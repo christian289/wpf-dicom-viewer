@@ -40,6 +40,30 @@ dotnet dnx -y XamlStyler.Console@3.2501.8 -- -f src/DicomViewer.UI/Themes/Generi
 
 formatter 실행은 앱·UI 실행 검증이 아닙니다. UI 자동조작은 실행 직전 사용자 승인이 필요합니다.
 
+### 고정 기준 DICOM 데이터 복원·검증 (vhp-female-ankle-v1)
+
+공개 발목 CT 150개 기준 자료는 `data/dicom/vhp-female-ankle-v1/`에 Git LFS로 저장되어 있습니다. 출처·라이선스·한계는 [NOTICE](data/dicom/vhp-female-ankle-v1/NOTICE.md)를 따릅니다. 이 자료는 체중부하가 아닌 사체 CT이며 WBCT·CBCT·진단용이 아닙니다.
+
+```powershell
+# 클론별 1회: 이 저장소에 Git LFS 필터를 로컬로 등록합니다(전역 LFS 설정이 없는 클론용).
+git lfs install --local --skip-repo
+
+# LFS 객체를 원격에서 가져옵니다(네트워크 필요). 로컬 캐시에 객체가 없을 때만 필요합니다.
+git lfs pull --include "data/dicom/vhp-female-ankle-v1/**"
+
+# 로컬 LFS 캐시에 객체가 이미 있으면 작업 트리에 복원합니다(원격 접속 없음).
+git lfs checkout
+
+# 처음 빌드할 때는 NuGet 패키지 복원을 위해 네트워크가 필요할 수 있습니다.
+dotnet build tools/DicomViewer.DatasetTool/DicomViewer.DatasetTool.csproj -c Release
+
+# 검증은 네트워크 없이 이미 빌드된 결과로 실행합니다(복원 없음, 원 출처 접속 없음).
+dotnet run --project tools/DicomViewer.DatasetTool -c Release --no-build --no-restore -- verify data/dicom/vhp-female-ankle-v1/manifest.json
+```
+
+포인터만 남아 있거나 파일이 없으면 검증은 실패합니다. 실패 시 빈 자료로 대체하지 않으며, `collect`로 원 출처를 다시 내려받지 않습니다. 명령과 실패 동작의 상세는 [도구 README](tools/DicomViewer.DatasetTool/README.md)를 따릅니다.
+
+
 ## User Guide (사용법)
 
 ### Main Navigation (화면 전환)

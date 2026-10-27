@@ -1,0 +1,2 @@
+data/dicom/**/*.dcm filter=lfs diff=lfs merge=lfs -text
+data/dicom/**/*.dicom filter=lfs diff=lfs merge=lfs -text
