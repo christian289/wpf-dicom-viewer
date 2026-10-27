@@ -99,7 +99,7 @@ Git LFS는 저장 방식일 뿐입니다. 개인정보 삭제, 검토, 라이선
 
 ## 검증 증거 (관찰 결과)
 
-아래는 실제 실행 결과입니다. 커밋·클론 검증은 아직 수행하지 않았습니다.
+아래 결과는 데이터 기준선 커밋 `3dd5dc7`에 대한 관찰입니다. 이 커밋 이후 문서 커밋 `920ef42`, `5f32cb9`는 데이터 파일을 바꾸지 않았습니다. 원격 반영과 원격 빈 LFS 캐시 clone 검증은 이 섹션에 포함하지 않으며, 실행 시점에 별도로 기록합니다.
 
 - `collect`(Release, `--no-build --no-restore`): 150/150 수집, 종료 코드 0. 저장 사본 합계 78,793,078 bytes (원본 공개 합계 78,856,102 bytes와 다름: 저장 방식 차이이며 원본 크기 검사는 수집 중 메모리에서 수행).
 - `verify manifest.json`(오프라인): 150개 파일, 78,793,078 bytes, 종료 코드 0.
@@ -110,7 +110,7 @@ Git LFS는 저장 방식일 뿐입니다. 개인정보 삭제, 검토, 라이선
   - 허용 목록 밖 최상위 태그 0, 사설 태그 0, 시퀀스 0, 생성 빈 속성 값 위반 0, VR 불일치 0. 환자 값은 출력하지 않음.
   - 음성 대조(실행함, 모두 종료 코드 1과 실패 보고): 저장 PixelData 해시 변경, 원본 PixelData 해시 변경, 원본 기하 해시 변경, 허용 목록 밖 태그 추가(매니페스트 해시를 갱신해 태그 검사만 실패하도록 함). 사설 태그·시퀀스·VR 불일치·생성 빈 속성 값 대조는 실행하지 않았습니다.
 - 픽셀 시각 검사: 150장 전체를 축소 대조표로, 9장을 원본 해상도(512px)로 확인했고 화면 글자는 보이지 않았습니다. 이는 표본 시각 검사이며 픽셀 내 식별 정보가 없다는 보증이 아닙니다.
-- 깨끗한 clone 증명(기준 커밋 `3dd5dc7`, 로컬 경로에서 `.git/` 임시 clone, 원격 push 이전):
+- 깨끗한 clone 증명(기준 커밋 `3dd5dc7`, 로컬 경로 clone 기준; 원격 clone 결과가 아님):
   - `GIT_LFS_SKIP_SMUDGE=1`로 clone하면 150개 모두 LFS 포인터이며, verify는 `Dataset file 0001 is an unresolved Git LFS pointer` 메시지와 종료 코드 1을 냈습니다.
   - 복원: 캐시 객체 150개를 clone의 `.git/lfs/objects`로 복사한 뒤 `git lfs checkout`을 실행했습니다(150/150, 로컬 캐시만 사용). 이어서 verify를 실행해 종료 코드 0을 얻었습니다. 프록시 환경변수(`HTTP_PROXY`·`HTTPS_PROXY`·`ALL_PROXY`=`http://127.0.0.1:9`)는 verify 실행에만 설정했습니다. 이는 프록시 환경변수 차단일 뿐 OS 방화벽 격리가 아닙니다.
   - 복사 전 `git lfs checkout`은 객체가 없을 때 `Skipped checkout ... content not local. Use fetch to download.`를 출력했고 포인터를 남겼습니다. 이 명령은 다운로드하지 않았습니다.
@@ -118,6 +118,6 @@ Git LFS는 저장 방식일 뿐입니다. 개인정보 삭제, 검토, 라이선
   - 누락, origin이 도달 불가한 경우: clone의 origin을 `Z:/does-not-exist/repo`로 바꾼 뒤 `git checkout -- <path>`를 실행했습니다. 출력은 `Downloading ...` 후 `Smudge error`/`batch request` 오류였고, 종료 코드 128이었으며 파일은 생성되지 않았습니다. verify는 `Dataset file 0042 is missing` 메시지와 종료 코드 1이었습니다. origin과 객체를 복구한 뒤 `git checkout -- <path>`와 verify는 종료 코드 0이었습니다.
   - 손상: 캐시 객체 1개를 같은 길이의 0 바이트로 바꾼 뒤 파일을 `rm`하고 `git checkout -- <path>`를 실행했습니다. 종료 코드 0, git-lfs 오류 출력 없음. verify는 `SHA-256 differs` 메시지와 종료 코드 1을 냈습니다. 객체를 복구한 뒤 같은 checkout과 verify는 종료 코드 0이었습니다. git-lfs가 로컬 객체 해시를 검사했는지는 이 실행에서 확인하지 않았습니다.
   - 정상 상태 복구 후 프록시 차단 상태에서 verify 종료 코드 0, `git lfs fsck --objects --pointers` 통과, 작업 트리 변경 0입니다.
-- 아직 실행하지 않음: 원격 push와 push 후 원격 clone 검증, 사설 태그·시퀀스·VR 불일치·생성 빈 속성 값 음성 대조, 증거 문서 커밋의 push.
+- 이 섹션에 없는 항목: 원격 LFS 다운로드 검증, 사설 태그·시퀀스·VR 불일치·생성 빈 속성 값 음성 대조. 이 로컬 clone 증명으로 원격 접근성이나 이 항목들을 증명하지 않습니다.
 
 이 증거는 PS3.15 적합성, 임상 정확도, 다른 판독기와의 호환성을 증명하지 않습니다.
