@@ -154,6 +154,9 @@ public sealed partial class ViewerViewModel
     private void ClearSeries()
     {
         CancelRequests();
+        // 취소된 요청은 더 이상 IsLoading을 지울 수 없으므로 여기서 로딩 소유권을 해제한다.
+        // The cancelled request can no longer clear IsLoading, so release loading ownership here.
+        IsLoading = false;
         CancelRenders();
 
         _navigation.Clear();

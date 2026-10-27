@@ -49,6 +49,27 @@ public sealed class ViewerViewModelTests
     });
 
     [Fact]
+    public Task Clearing_the_selection_during_a_pending_load_publishes_empty_and_a_late_result_stays_ignored() => RunAsync(async h =>
+    {
+        await h.OpenAsync(ViewerData.Dataset(ViewerData.SpatialSeries("A", 3)));
+        h.Vm.IsLoading.Should().BeTrue();
+
+        h.Vm.SelectedSeries = null;
+
+        h.Vm.IsLoading.Should().BeFalse();
+        h.Vm.Frame.Should().BeNull();
+        h.Vm.State.Should().Be(ViewerState.Empty);
+
+        h.Images.Load(ViewerData.Path("A", 1)).SetResult(ViewerData.Image(1));
+        await h.Ui.DrainAsync();
+        await h.Vm.WaitForIdleAsync();
+
+        h.Vm.Frame.Should().BeNull();
+        h.Vm.IsLoading.Should().BeFalse();
+        h.Vm.State.Should().Be(ViewerState.Empty);
+    });
+
+    [Fact]
     public Task Older_slice_failure_is_ignored_while_a_newer_request_is_pending() => RunAsync(async h =>
     {
         await h.OpenAsync(ViewerData.Dataset(ViewerData.SpatialSeries("A", 3)));
