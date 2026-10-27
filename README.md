@@ -6,7 +6,7 @@
 
 ## 개발 환경 및 빌드
 
-- 기준 SDK: .NET SDK **10.0.403**. `global.json`의 `latestFeature` 정책에 따라 같은 .NET 10의 최신 설치 SDK를 사용합니다.
+- 기준 SDK: .NET SDK **10.0.403**. `global.json`에 `rollForward=disable`, `allowPrerelease=false`를 명시하여 검증한 SDK로 고정합니다.
 - Visual Studio에서 작업할 경우 .NET 10과 `.slnx`를 지원하는 Visual Studio 2026을 사용합니다.
 - WPF 및 공통 계층의 기존 .NET 10 대상은 유지합니다. OpenSilver 실행 프로젝트는 호환성을 위해 .NET 9, 공유 라이브러리는 .NET Standard 2.0을 유지합니다.
 - 이전 개발 환경의 워크로드 `10.0.101` 고정은 제거했습니다. 전체 솔루션 빌드에는 현재 SDK의 `wasm-tools-net9` 워크로드가 필요합니다.
@@ -15,12 +15,30 @@
 
 ```powershell
 dotnet workload restore src/DicomViewer.slnx
+dotnet restore src/DicomViewer.slnx
 dotnet build src/DicomViewer.slnx
 dotnet test src/DicomViewer.Tests/DicomViewer.Tests.csproj
 dotnet run --project src/DicomViewer.WpfApp/DicomViewer.WpfApp.csproj
 ```
 
 SDK 설정 변경 후 이미 열린 Visual Studio에서는 솔루션을 닫았다가 다시 열어 프로젝트를 다시 로드합니다.
+
+### 패키지·서식·고도화 규약
+
+- NuGet 버전은 루트 `Directory.Packages.props`의 CPM(`ManagePackageVersionsCentrally`, `PackageVersion`)으로 관리합니다. csproj에는 필요한 PackageReference와 조건·비버전 메타데이터를 유지하고 Version/VersionOverride는 두지 않습니다.
+- `Directory.Build.props`의 공통 빌드 기본값과 각 프로젝트의 타깃·WPF 사용 여부를 유지합니다. 패키지 설정 이전으로 기존 버전을 올리거나 참조를 추가하지 않습니다.
+- 기본 솔루션은 기존 `src/DicomViewer.slnx`입니다. 중복 `.sln`은 사용하지 않습니다.
+- 루트 `.editorconfig`는 .NET 10 SDK 기본 템플릿을 기반으로 합니다. XAML은 `Settings.XamlStyler`와 동일한 공백 4칸·CRLF 규약을 사용합니다. 전체 소스를 일괄 재서식하지 않습니다.
+- 고도화의 UI 규약은 CustomControl 기본, 업무 화면 조합에만 UserControl 사용, 기존 컨트롤의 불필요한 재래핑 금지, WPF-UI 기본 테마입니다. 상세 공개 자료·설계·후속 작업은 [뷰어 고도화 명세](docs/superpowers/specs/2026-10-26-existing-viewer-assessment.md)를 따릅니다.
+- 아래 사용법은 현재 실시간 TCIA 구현을 설명합니다. 고정 공개 DICOM 재사용과 WPF-UI 적용은 후속 구현이며 이번 설정 마이그레이션에서 변경하지 않았습니다.
+
+XAML 서식 미리보기는 다음 명령으로 소스 변경 없이 확인할 수 있습니다.
+
+```powershell
+dotnet dnx -y XamlStyler.Console@3.2501.8 -- -f src/DicomViewer.UI/Themes/Generic.xaml -c Settings.XamlStyler --write-to-stdout
+```
+
+formatter 실행은 앱·UI 실행 검증이 아닙니다. UI 자동조작은 실행 직전 사용자 승인이 필요합니다.
 
 ## User Guide (사용법)
 

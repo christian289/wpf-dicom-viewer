@@ -163,16 +163,25 @@ NLM이 이 프로젝트·결과를 보증한다는 뜻이 아니다. 고정 버�
 
 실제 설정 마이그레이션은 문서 이전·정상 푸시 결과를 먼저 전달한 뒤 **별도 커밋**으로 수행한다. 전체 프로젝트의 참조·조건·평가 버전과 솔루션 구성을 비교하고 restore/build로 실제 적용을 확인한다. 테스트·OpenSilver 등 기존 프로젝트를 묵시적으로 제외하거나 필요한 참조를 삭제하지 않는다. 이 단계에는 앱 기능 구현을 포함하지 않는다.
 
+### 6.5 설정 마이그레이션의 실행 기록
+
+문서 이전 후 별도 설정 변경에서 기존 13개 프로젝트의 PackageReference 26개·고유 버전 21개를 조사했다. 버전만 CPM으로 이동했으며 프로젝트 XML의 참조·조건·비버전 메타데이터와 평가된 타깃·WPF·공통 빌드 값은 보존했다. Directory.Build.props의 기존 공통 기본값은 그대로 유지했다. 솔루션은 이미 `src/DicomViewer.slnx`였으므로 형식 변환이나 중복 sln 생성은 하지 않았다.
+
+- SDK 10.0.403에서 전체 slnx restore와 `build --no-restore`를 실행했다. 빌드는 오류 0개·경고 19개였다. NU1507 패키지 소스 매핑, NU1701 패키지 호환성, CS8603/CS8604 nullable, CS2002 중복 소스 경고를 숨기거나 관련 없는 코드 수정으로 처리하지 않았다.
+- 기존 테스트 프로젝트를 `--no-build --no-restore`로 실행하여 8개 통과·실패 0개·건너뜀 0개를 확인했다. 공개 DICOM·영상 기하·UI 검증으로 확대 해석하지 않는다.
+- XamlStyler.Console 3.2501.8을 실제 실행하여 Generic.xaml의 stdout 미리보기를 확인했다. 공백 4칸·CRLF와 XML 의미 보존, 원본 XAML 미변경을 확인했다. 무관한 소스 전체를 재서식하지 않았다.
+- 전체 프로젝트의 CPM 자동 적용·중앙 버전·SDK 고정을 MSBuild 평가로 확인했다. 앱·UI 실행이나 UI 자동조작은 수행하지 않았다.
+
 ## 7. 후속 실행 순서와 완료 증거
 
-이 체크리스트는 아직 실행하지 않은 작업이다. 각 단계는 해당 변경·검증 결과를 별도 기록하고, 앞선 문서 이전을 구현 완료로 소급 해석하지 않는다.
+공통 설정 단계만 아래 기록처럼 실행했으며 나머지는 미실행 후속 작업이다. 각 단계의 변경·검증을 구분하고 문서 이전이나 formatter 성공을 앱 기능 구현 완료로 소급 해석하지 않는다.
 
 1. **공통 설정 마이그레이션**
-   - [ ] 루트 Directory.Packages.props의 CPM·PackageVersion으로 버전을 중앙화하고 csproj의 Version/VersionOverride 중복을 제거한다. 프로젝트별 조건·테스트 패키지·비버전 메타데이터·기존 유효 버전을 보존한다.
-   - [ ] Directory.Build.props 공통 규약과 global.json의 SDK 10.0.403·rollForward=disable·allowPrerelease=false를 적용한다.
-   - [ ] .NET 10 기본 .editorconfig와 Settings.XamlStyler의 서식 규약을 일치시킨다. formatter 검증과 앱/UI 실행을 구분하며 UI 자동조작은 직전 승인을 받는다.
-   - [ ] 솔루션을 slnx로 관리하고 기존 sln 전환 시 명령·문서·CI 참조와 구성 매핑을 함께 옮긴다. 중복 sln을 남기지 않는다.
-   - [ ] 전체 영향 프로젝트의 restore/build와 실제 설정 적용 결과를 남기고 문서 이전과 별도 설정 커밋으로 분리한다.
+   - [x] 루트 Directory.Packages.props의 CPM·PackageVersion으로 버전을 중앙화하고 csproj의 Version/VersionOverride 중복을 제거했다. 프로젝트별 조건·테스트 패키지·비버전 메타데이터·기존 유효 버전을 보존했다.
+   - [x] Directory.Build.props 공통 규약을 유지하고 global.json의 SDK 10.0.403·rollForward=disable·allowPrerelease=false를 적용했다.
+   - [x] .NET 10 기본 .editorconfig와 Settings.XamlStyler의 XAML 서식 규약을 일치시켰다. formatter 검증과 앱/UI 실행은 구분하며 UI 자동조작은 직전 승인을 받는다.
+   - [x] 기존 slnx와 명령·문서 참조를 유지했다. 전환할 sln이나 중복 sln은 없었다.
+   - [x] 전체 영향 프로젝트의 restore/build와 실제 설정 적용을 검증했다. 문서 이전과 별도 설정 커밋으로 분리한다.
 2. **공개 자료 기준선**
    - [ ] 제3절의 출처·권한·메타데이터·픽셀/기하 보존을 검토하고 최초 수집한 공개 사본만 Git LFS에 등록한다. 다른 작업 사본이나 원본 환자 필드를 복사하지 않는다.
    - [ ] 매니페스트·Git/LFS revision·기대값을 고정하고 깨끗한 clone에서 포인터 복원·해시·누락 오류를 확인한다. 원 출처 연결 없이 같은 자료를 다시 사용한다.
