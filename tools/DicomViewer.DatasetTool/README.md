@@ -112,10 +112,11 @@ Git LFS는 저장 방식일 뿐입니다. 개인정보 삭제, 검토, 라이선
 - 픽셀 시각 검사: 150장 전체를 축소 대조표로, 9장을 원본 해상도(512px)로 확인했고 화면 글자는 보이지 않았습니다. 이는 표본 시각 검사이며 픽셀 내 식별 정보가 없다는 보증이 아닙니다.
 - 깨끗한 clone 증명(기준 커밋 `3dd5dc7`, 로컬 경로에서 `.git/` 임시 clone, 원격 push 이전):
   - `GIT_LFS_SKIP_SMUDGE=1`로 clone하면 150개 모두 LFS 포인터이며, verify는 `Dataset file 0001 is an unresolved Git LFS pointer` 메시지와 종료 코드 1을 냈습니다.
-  - 로컬 LFS 캐시 150개를 clone의 `.git/lfs/objects`로 복사한 뒤 `git lfs checkout`(150/150)으로 복원했고, verify는 종료 코드 0이었습니다. HTTP 프록시를 `127.0.0.1:9`로 지정한 상태에서 실행했습니다.
-  - 누락: 객체 1개를 제거하고 origin을 존재하지 않는 경로로 바꾼 뒤 `git checkout`은 실패(종료 코드 128)했고, verify는 `Dataset file 0042 is missing` 메시지와 종료 코드 1을 냈습니다. 객체와 origin을 복구하면 종료 코드 0입니다.
-  - 손상: 캐시 객체 1개를 같은 길이의 0 바이트로 바꾸자 `git checkout`은 검증 없이 성공했고, verify는 `SHA-256 differs` 메시지와 종료 코드 1을 냈습니다. 객체를 복구하면 종료 코드 0입니다.
-  - origin이 살아 있을 때 git-lfs는 누락 객체를 origin에서 자동으로 내려받았습니다. 이는 git-lfs 동작이며, verify 자체는 네트워크 코드를 사용하지 않습니다.
+  - 복원: 캐시 객체 150개를 clone의 `.git/lfs/objects`로 복사한 뒤 `git lfs checkout`을 실행했습니다(150/150, 로컬 캐시만 사용). 이어서 verify를 실행해 종료 코드 0을 얻었습니다. 프록시 환경변수(`HTTP_PROXY`·`HTTPS_PROXY`·`ALL_PROXY`=`http://127.0.0.1:9`)는 verify 실행에만 설정했습니다. 이는 프록시 환경변수 차단일 뿐 OS 방화벽 격리가 아닙니다.
+  - 복사 전 `git lfs checkout`은 객체가 없을 때 `Skipped checkout ... content not local. Use fetch to download.`를 출력했고 포인터를 남겼습니다. 이 명령은 다운로드하지 않았습니다.
+  - 누락, origin이 도달 가능한 경우: 객체 1개를 `mv`로 치우고 파일을 `rm`한 뒤 `git checkout -- <path>`를 실행했고 종료 코드 0, verify 종료 코드 0이었습니다. 이 실행의 출력에는 다운로드 진행 줄이 없었으므로, 파일이 origin에서 내려받아졌는지는 출력으로 확인하지 않았습니다. 같은 명령이 origin이 도달 불가할 때 다운로드를 시도했다는 점[아래 항목]을 근거로 한 추정입니다.
+  - 누락, origin이 도달 불가한 경우: clone의 origin을 `Z:/does-not-exist/repo`로 바꾼 뒤 `git checkout -- <path>`를 실행했습니다. 출력은 `Downloading ...` 후 `Smudge error`/`batch request` 오류였고, 종료 코드 128이었으며 파일은 생성되지 않았습니다. verify는 `Dataset file 0042 is missing` 메시지와 종료 코드 1이었습니다. origin과 객체를 복구한 뒤 `git checkout -- <path>`와 verify는 종료 코드 0이었습니다.
+  - 손상: 캐시 객체 1개를 같은 길이의 0 바이트로 바꾼 뒤 파일을 `rm`하고 `git checkout -- <path>`를 실행했습니다. 종료 코드 0, git-lfs 오류 출력 없음. verify는 `SHA-256 differs` 메시지와 종료 코드 1을 냈습니다. 객체를 복구한 뒤 같은 checkout과 verify는 종료 코드 0이었습니다. git-lfs가 로컬 객체 해시를 검사했는지는 이 실행에서 확인하지 않았습니다.
   - 정상 상태 복구 후 프록시 차단 상태에서 verify 종료 코드 0, `git lfs fsck --objects --pointers` 통과, 작업 트리 변경 0입니다.
 - 아직 실행하지 않음: 원격 push와 push 후 원격 clone 검증, 사설 태그·시퀀스·VR 불일치·생성 빈 속성 값 음성 대조, 증거 문서 커밋의 push.
 
