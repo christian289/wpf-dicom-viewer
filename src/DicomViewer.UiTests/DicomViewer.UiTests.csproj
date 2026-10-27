@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    선택적 UI 검증 프로젝트. 제품 기능이 아니며 기본 테스트 실행에 포함되지 않는다.
+    DICOM_VIEWER_RUN_UI_TESTS=1 과 DICOM_VIEWER_APP_EXE 가 모두 있을 때만 실행한다.
+    Optional UI verification project. Not a product feature and not part of the default test run.
+    Runs only when DICOM_VIEWER_RUN_UI_TESTS=1 and DICOM_VIEWER_APP_EXE are both set.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>false</UseWPF>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FlaUI.UIA3" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+</Project>

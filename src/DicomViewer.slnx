@@ -24,6 +24,12 @@
     <Project Path="DicomViewer.Tests/DicomViewer.Tests.csproj" />
   </Folder>
 
+  <!-- Verification: 선택적 UI 검증(옵트인). 제품 기능 아님 -->
+  <!-- Verification: optional UI checks (opt-in). Not a product feature -->
+  <Folder Name="/Verification/">
+    <Project Path="DicomViewer.UiTests/DicomViewer.UiTests.csproj" />
+  </Folder>
+
   <!-- OpenSilver: WebAssembly 프로젝트 -->
   <!-- OpenSilver: WebAssembly projects -->
   <Folder Name="/OpenSilver/">
